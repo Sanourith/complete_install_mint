@@ -36,16 +36,20 @@ This project is designed to:
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/<your_repo>/linux-auto-installer.git
-cd linux-auto-installer
-2. Make the main script executable
-bash
-Copy code
+git clone https://github.com/Sanourith/complete_install_mint.git
+cd complete_install_mint
+```
+
+### 2. Make the main script executable
+```bash
 chmod +x main_installer.sh
-3. Run the installer
-bash
-Copy code
+```
+
+### 3. Run the installer
+```bash
 ./main_installer.sh
+```
+
 How main_installer.sh Works
 The main script performs the following steps:
 
@@ -68,8 +72,7 @@ GTK themes, icons, wallpapers, configuration files, etc.
 Files are copied to the appropriate system or user directories.
 
 Example Script in install_scripts/
-bash
-Copy code
+```bash
 #!/usr/bin/env bash
 set -e
 
@@ -87,20 +90,11 @@ if ! command -v docker &> /dev/null; then
 else
   echo "Docker already installed — skipping."
 fi
+```
+
 Best Practices
 All installation scripts should be idempotent (safe to re-run without changes).
 
 Prefix files in install_scripts with a number to define execution order.
 
 Use the z_resources folder for non-executable files (themes, configs, assets).
-
-Roadmap
- Add installation logging
-
- Add multi-distribution support (Ubuntu / Debian / Arch)
-
- Add silent mode option (no user interaction)
-
- Add installers for DBeaver, VSCode, and other development tools
-
- Add rollback / uninstall script
