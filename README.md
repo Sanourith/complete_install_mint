@@ -20,13 +20,12 @@ This project is designed to:
 ```
 .
 ├── main_installer.sh          # Main entry point script
-├── install_scripts/           # Specific installation scripts (automatically executed)
-│ ├── 1.
-│ ├── 2.
-│ └── ...
 ├── z_resources/               # Miscellaneous resources (themes, configs, icons, etc.)
-│ ├── themes/
-│ └── wallpapers/
+│ ├── 1.script.sh              # Specific installation scripts (automatically executed)
+│ ├── 2.script.sh
+│ ├── ...
+│ ├── themes/*
+│ └── wallpapers/*
 └── README.md
 ```
 
