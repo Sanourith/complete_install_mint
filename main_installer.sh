@@ -40,29 +40,17 @@ function _show_help() {
 }
 
 OPTGET=$(which getopt)
-OPTS=$($OPTGET -o hd -l debug,help -- "$@")
+OPTS=$($OPTGET -o hd -l debug,help,save -- "$@")
 
 eval set -- "$OPTS"
 
 while true; do
   case "$1" in
-    -d|--debug)
-      DEBUG=true
-      set -x
-      shift
-      ;;
-    -h|--help)
-      _show_help
-      exit 0
-      ;;
-    --)
-        shift
-        break
-        ;;
-    *)
-      echo "Unknown option: $1" >&2
-      exit 1
-      ;;
+    -d|--debug) DEBUG=true; set -x; shift; ;;
+    -h|--help) _show_help; exit 0; ;;
+    --save) SAVE=true; shift; ;;
+    --) shift; break; ;;
+    *) echo "Unknown option: $1" >&2; exit 1; ;;
   esac
 done
 
@@ -200,30 +188,35 @@ cd "$SCRIPT_DIR"
 log_info "Workplace : $(pwd)"
 echo ""
 
-_bashrc_update
-_check_dns
-_size_terminal
-_install_themes
-
-log_warning "# Preparing installation for scripts :"
-readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f | sort)
-if [ ${#scripts[@]} -eq 0 ]; then
-  log_error "No script found into z_resources"
-  exit 1
+if [[ "$SAVE" == "true" ]]; then
+  # TODO add script
+  echo "Backup script"
 else
-  for i in "${!scripts[@]}"; do
-    script_name=$(basename "${scripts[i]}")
-    echo "       >> $script_name"
-  done
-  echo ""
-fi
+  _bashrc_update
+  _check_dns
+  _size_terminal
+  _install_themes
 
-read -p "Do you want to proceed with global installation ? (y/n) " answer
-if [[ ! "$answer" =~ ^[yY]$ ]]; then
-  echo "You can also launch scripts manually from z_resources directory"
-  exit 0
-else
-  _install_scripts
+  log_warning "# Preparing installation for scripts :"
+  readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f | sort)
+  if [ ${#scripts[@]} -eq 0 ]; then
+    log_error "No script found into z_resources"
+    exit 1
+  else
+    for i in "${!scripts[@]}"; do
+      script_name=$(basename "${scripts[i]}")
+      echo "       >> $script_name"
+    done
+    echo ""
+  fi
+
+  read -p "Do you want to proceed with global installation ? (y/n) " answer
+  if [[ ! "$answer" =~ ^[yY]$ ]]; then
+    echo "Exiting. > You can also launch scripts manually from z_resources directory"
+    exit 0
+  else
+    _install_scripts
+  fi
 fi
 
 echo ""
