@@ -9,7 +9,7 @@ Everything is managed from a single entry point: `main_installer.sh`.
 
 This project is designed to:
 - Prepare a clean and up-to-date Linux system.
-- Automatically install a set of common tools and services (Docker, Kubernetes, etc.).
+- Automatically install a set of common tools and services (Apps, DevOps & Data softwares, etc.).
 - Inject custom resources (themes, configurations, wallpapers, etc.).
 - Simplify reinstallations, migrations, or development environment setups.
 
@@ -19,12 +19,12 @@ This project is designed to:
 
 ```
 .
-├── main_installer.sh # Main entry point script
-├── install_scripts/ # Specific installation scripts (automatically executed)
-│ ├── 1.docker.sh
-│ ├── 2.kubernetes.sh
+├── main_installer.sh          # Main entry point script
+├── install_scripts/           # Specific installation scripts (automatically executed)
+│ ├── 1.
+│ ├── 2.
 │ └── ...
-├── z_resources/ # Miscellaneous resources (themes, configs, icons, etc.)
+├── z_resources/               # Miscellaneous resources (themes, configs, icons, etc.)
 │ ├── themes/
 │ └── wallpapers/
 └── README.md
@@ -45,11 +45,12 @@ cd complete_install_mint
 chmod +x main_installer.sh
 ```
 
-### 3. Run the installer
+### 3. Run the installer helper
 ```bash
-./main_installer.sh
+./main_installer.sh --help
 ```
 
+# WIP
 How main_installer.sh Works
 The main script performs the following steps:
 
