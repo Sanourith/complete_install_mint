@@ -36,11 +36,21 @@ print_separator() {
 
 # TODO - add help complete dash
 function _show_help() {
-  echo "THIS IS HELP"
+  echo "Usage: $0 [OPTIONS]"
+  echo ""
+  echo "Options:"
+  echo "  -d, --debug    Enable debug mode"
+  echo "  -h, --help     Show this help message"
+  echo "  -s, --save     Run backup script"
+  echo "  -c, --clean    Run cleanup script"
 }
 
+DEBUG="false"
+SAVE="false"
+CLEAN="false"
+
 OPTGET=$(which getopt)
-OPTS=$($OPTGET -o hd -l debug,help,save -- "$@")
+OPTS=$($OPTGET -o hdsc -l debug,help,save,clean -- "$@")
 
 eval set -- "$OPTS"
 
@@ -48,7 +58,8 @@ while true; do
   case "$1" in
     -d|--debug) DEBUG=true; set -x; shift; ;;
     -h|--help) _show_help; exit 0; ;;
-    --save) SAVE=true; shift; ;;
+    -s|--save) SAVE=true; shift; ;;
+    -c|--clean) CLEAN=true; shift; ;;
     --) shift; break; ;;
     *) echo "Unknown option: $1" >&2; exit 1; ;;
   esac
@@ -73,7 +84,7 @@ function _install_scripts() {
 
     chmod +x "$script"
 
-    if bash "$script"; then
+    if bash "$script" "$DEBUG"; then
       log_success "$script_name finished successfully"
       ((++success_count))
       print_separator
@@ -97,10 +108,9 @@ function _install_scripts() {
       for script in "${failed_scripts[@]}"; do
         echo "       xx $script"
       done
-    else
-      log_success "Everything went well !"
     fi
   done
+  log_success "Everything went well !"
 }
 
 function _install_themes() {
@@ -191,6 +201,9 @@ echo ""
 if [[ "$SAVE" == "true" ]]; then
   # TODO add script
   echo "Backup script"
+elif [[ "$CLEAN" == "true" ]]; then
+  # TODO add script
+  echo "Clean script"
 else
   _bashrc_update
   _check_dns
