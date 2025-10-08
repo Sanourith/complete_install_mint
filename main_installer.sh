@@ -34,6 +34,7 @@ print_separator() {
     echo "============================================================================="
 }
 
+# TODO - add help complete dash
 function _show_help() {
   echo "THIS IS HELP"
 }
@@ -79,18 +80,18 @@ function _install_scripts() {
   for script in "${scripts[@]}"; do
     print_separator
     script_name=$(basename "$script")
-    log_warning "Executing $script..."
+    log_warning "Executing $script_name..."
     print_separator
 
     chmod +x "$script"
 
     if bash "$script"; then
-      log_success "$script finished successfully"
+      log_success "$script_name finished successfully"
       ((++success_count))
       print_separator
     else
       exit_code=$?
-      log_error "$script failed (code: $exit_code)"
+      log_error "$script_name failed (code: $exit_code)"
       failed_scripts+=("$script")
 
       read -p "Continue with other scripts ? (y/n) " reply
@@ -100,7 +101,6 @@ function _install_scripts() {
       fi
     fi
     echo ""
-    print_separator
     log_info "Installation finished"
     log_success "✅ Finished script : $success_count/${#scripts[@]}"
 
@@ -185,6 +185,7 @@ cleanup() {
   print_separator
 }
 trap cleanup EXIT
+
 
 ###################
 #   MAIN SCRIPT   #
