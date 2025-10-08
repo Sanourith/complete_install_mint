@@ -96,21 +96,27 @@ function _install_scripts() {
       read -p "Continue with other scripts ? (y/n) " reply
       if [[ ! "$reply" =~ ^[yY]$ ]]; then
         log_warning "Installation stopped"
+        error="1"
         break
       fi
     fi
     echo ""
-    log_info "Installation finished"
-    log_success "✅ Finished script : $success_count/${#scripts[@]}"
-
-    if [[ "${#failed_scripts[@]}" -gt 0 ]]; then
-      log_error "Failed script :"
-      for script in "${failed_scripts[@]}"; do
-        echo "       xx $script"
-      done
+    if [[ "$error" == "1" ]]; then
+      log_error "$script_name failed"
     fi
   done
-  log_success "Everything went well !"
+
+  log_success "✅ Finished script : $success_count/${#scripts[@]}"
+  if [[ "${#failed_scripts[@]}" -gt 0 ]]; then
+    log_error "Failed script :"
+    for script in "${failed_scripts[@]}"; do
+      echo "       xx $script"
+    done
+    log_error "You may try to launch scripts manually..."
+  else
+    log_success "Everything's done, enjoy your Linux !"
+  fi
+
 }
 
 function _install_themes() {
@@ -162,7 +168,7 @@ function _bashrc_update() {
     echo "              >   used to open non-Steam added games folders"
   fi
 
-  if ! grep -q "maj=" ~/.bashrc; then
+  if ! grep -q "alias maj=" ~/.bashrc; then
     echo "alias maj='sudo apt update && sudo apt upgrade -y'" >> ~/.bashrc
     echo "alias update='sudo apt update && sudo apt upgrade -y'" >> ~/.bashrc
     log_success "maj/update  - added"
@@ -171,6 +177,21 @@ function _bashrc_update() {
     echo "      ** maj/update  - already in use"
     echo "              >   used to update linux"
   fi
+
+  if ! grep -q "alias python=" ~/.bashrc; then
+    echo "alias python=python3" >> ~/.bashrc
+    log_success "python     - added"
+  else
+    echo "      ** python      - already in use"
+  fi
+
+  if ! grep -q 'alias k="kubectl"' ~/.bashrc; then
+    echo 'alias k="kubectl"' >> ~/.bashrc
+    log_success "kubectl - k added"
+  else
+    echo "      ** k           - Already in use"
+  fi
+
   echo ""
 }
 
@@ -234,8 +255,8 @@ fi
 
 echo ""
 log_warning "RECOMMENDED ACTIONS :"
+echo "       >> INSTALL GRAPHIC DRIVER using ControlCenter"
 echo "       ** Reboot your computer"
 echo "       ** Configure keyboard shortcut"
 echo "       ** Customize your panel & widgets"
 print_separator
-log_success "Everything's done, enjoy your Linux !"
