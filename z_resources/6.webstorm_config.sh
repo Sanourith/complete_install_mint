@@ -46,7 +46,7 @@ print_separator() {
 # GLOBAL VARIABLES
 # ==============================================================================
 
-WEBSTORM_VERSION="2025.2.1"
+WEBSTORM_VERSION="2025.2.3"
 INSTALL_DIR="/opt/webstorm"
 DESKTOP_FILE="$HOME/.local/share/applications/webstorm.desktop"
 SYMLINK_PATH="/usr/local/bin/webstorm"
@@ -65,8 +65,8 @@ CONFIG_APPLIED=0
 print_header() {
   echo -e "${BLUE}"
   echo "╔══════════════════════════════════════════════════════════╗"
-  echo "║        WebStorm Automatic Installation & Config         ║"
-  echo "║              Version: ${WEBSTORM_VERSION}                          ║"
+  echo "║        WebStorm Automatic Installation & Config          ║"
+  echo "║              Version: ${WEBSTORM_VERSION}                           ║"
   echo "╚══════════════════════════════════════════════════════════╝"
   echo -e "${NC}"
   echo
