@@ -138,6 +138,57 @@ function _size_terminal() {
   echo ""
 }
 
+function _create_appimage_shortcut() {
+  app_name="$1"
+  app_path="$2"
+  app_icon="$3"
+
+  log_info "# Add Ankama_Launcher to executables..."
+
+  if [[ -z "$app_name" || -z "$app_path" ]]; then
+    log_error "Error: missing elements -- to install app_image use :"
+    echo "    _create_appimage_shortcut <app_name> <app_path> <app_icon>"
+    return 1
+  fi
+
+  if [[ -n "$app_path" ]]; then
+    log_warning "$app_name AppImage is not into repository. Do you want to download it ?"
+    read -p "(y/n)" answer
+    if [[ "$answer" =~ ^[yY]$ ]]; then
+      # LIST OF APPIMAGES YOU WANT TO USE
+      if [[ "$app_name" == "Ankama_Launcher" ]]; then
+        # cd "z_resources"
+        # wget -O "Ankama_Launcher.AppImage" "https://download.ankama.com/launcher-dofus/full/linux"
+        # cd -
+      fi
+    # OTHER APP
+    else
+      log_warning "$app_name not installed"
+      return 1
+    fi
+  fi
+
+  local desktop_dir="$HOME/.local/share/applications"
+  mkdir -p "$desktop_dir"
+
+  local desktop_file="$desktop_dir/${app_name}.desktop"
+  cat > "$desktop_file" <<EOF
+[Desktop Entry]
+Name=$app_name
+Exec=env DISPLAY=:0.0 $app_path
+Icon=$app_icon
+Type=Application
+StartupNotify=true
+Terminal=false
+Categories=Game;
+EOF
+
+  chmod +x "$desktop_file"
+  update-desktop-database "$desktop_dir" >/dev/null 2>&1
+
+  log_success "App shortcut: $app_name added successfully"
+}
+
 function _check_dns() {
   log_info "# Update DNS & make it immutable..."
   if ! grep -q "1.0.0.1" /etc/resolv.conf; then
@@ -230,6 +281,7 @@ else
   _check_dns
   _size_terminal
   _install_themes
+  # _create_appimage_shortcut "Ankama_Launcher" "$RESOURCES_DIR/Dofus 3.0-Setup-x86_64.AppImage" "$RESOURCES_DIR/icons/wakfu.png"
 
   log_warning "# Preparing installation for scripts :"
   readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f | sort)
