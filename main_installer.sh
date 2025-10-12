@@ -138,56 +138,56 @@ function _size_terminal() {
   echo ""
 }
 
-function _create_appimage_shortcut() {
-  app_name="$1"
-  app_path="$2"
-  app_icon="$3"
+# function _create_appimage_shortcut() {
+#   app_name="$1"
+#   app_path="$2"
+#   app_icon="$3"
 
-  log_info "# Add Ankama_Launcher to executables..."
+#   log_info "# Add Ankama_Launcher to executables..."
 
-  if [[ -z "$app_name" || -z "$app_path" ]]; then
-    log_error "Error: missing elements -- to install app_image use :"
-    echo "    _create_appimage_shortcut <app_name> <app_path> <app_icon>"
-    return 1
-  fi
+#   if [[ -z "$app_name" || -z "$app_path" ]]; then
+#     log_error "Error: missing elements -- to install app_image use :"
+#     echo "    _create_appimage_shortcut <app_name> <app_path> <app_icon>"
+#     return 1
+#   fi
 
-  if [[ -n "$app_path" ]]; then
-    log_warning "$app_name AppImage is not into repository. Do you want to download it ?"
-    read -p "(y/n)" answer
-    if [[ "$answer" =~ ^[yY]$ ]]; then
-      # LIST OF APPIMAGES YOU WANT TO USE
-      if [[ "$app_name" == "Ankama_Launcher" ]]; then
-        # cd "z_resources"
-        # wget -O "Ankama_Launcher.AppImage" "https://download.ankama.com/launcher-dofus/full/linux"
-        # cd -
-      fi
-    # OTHER APP
-    else
-      log_warning "$app_name not installed"
-      return 1
-    fi
-  fi
+#   if [[ -n "$app_path" ]]; then
+#     log_warning "$app_name AppImage is not into repository. Do you want to download it ?"
+#     read -p "(y/n)" answer
+#     if [[ "$answer" =~ ^[yY]$ ]]; then
+#       # LIST OF APPIMAGES YOU WANT TO USE
+#       if [[ "$app_name" == "Ankama_Launcher" ]]; then
+#         # cd "z_resources"
+#         # wget -O "Ankama_Launcher.AppImage" "https://download.ankama.com/launcher-dofus/full/linux"
+#         # cd -
+#       fi
+#     # OTHER APP
+#     else
+#       log_warning "$app_name not installed"
+#       return 1
+#     fi
+#   fi
 
-  local desktop_dir="$HOME/.local/share/applications"
-  mkdir -p "$desktop_dir"
+#   local desktop_dir="$HOME/.local/share/applications"
+#   mkdir -p "$desktop_dir"
 
-  local desktop_file="$desktop_dir/${app_name}.desktop"
-  cat > "$desktop_file" <<EOF
-[Desktop Entry]
-Name=$app_name
-Exec=env DISPLAY=:0.0 $app_path
-Icon=$app_icon
-Type=Application
-StartupNotify=true
-Terminal=false
-Categories=Game;
-EOF
+#   local desktop_file="$desktop_dir/${app_name}.desktop"
+#   cat > "$desktop_file" <<EOF
+# [Desktop Entry]
+# Name=$app_name
+# Exec=env DISPLAY=:0.0 $app_path
+# Icon=$app_icon
+# Type=Application
+# StartupNotify=true
+# Terminal=false
+# Categories=Game;
+# EOF
 
-  chmod +x "$desktop_file"
-  update-desktop-database "$desktop_dir" >/dev/null 2>&1
+#   chmod +x "$desktop_file"
+#   update-desktop-database "$desktop_dir" >/dev/null 2>&1
 
-  log_success "App shortcut: $app_name added successfully"
-}
+#   log_success "App shortcut: $app_name added successfully"
+# }
 
 function _check_dns() {
   log_info "# Update DNS & make it immutable..."
@@ -205,6 +205,110 @@ function _check_dns() {
 
   cat /etc/resolv.conf
   echo ""
+}
+
+function _update_network_driver() {
+function _update_network_driver() {
+    local repo_url="https://github.com/awesometic/realtek-r8125-dkms.git"
+    local workdir="/tmp/realtek-r8125-dkms"
+    local target_speed=${1:-1000}
+
+    # Détection automatique de l'interface
+    local iface=$(ip -o link show | awk -F': ' '{print $2}' | grep -E '^en' | head -1)
+
+    if [[ -z "$iface" ]]; then
+        echo "ERROR: Aucune interface réseau Ethernet trouvée."
+        return 1
+    fi
+
+    echo "Interface détectée : $iface"
+
+    # Vérification du chipset Realtek
+    if ! lspci | grep -i realtek | grep -i ethernet; then
+        echo "WARNING: Pas de carte Realtek détectée. Ce script est inutile."
+        return 1
+    fi
+
+    echo "Installation des dépendances..."
+    sudo apt update -y
+    sudo apt install -y dkms build-essential git ethtool linux-headers-$(uname -r)
+
+    echo "Téléchargement du module DKMS r8125..."
+    rm -rf "$workdir"
+    git clone "$repo_url" "$workdir"
+
+    echo "Installation du module..."
+    cd "$workdir" || return 1
+    sudo ./dkms-install.sh
+
+    # Vérifier que le module est bien installé
+    if ! modinfo r8125 &>/dev/null; then
+        echo "ERROR: Échec de l'installation du module r8125"
+        return 1
+    fi
+
+    echo "Suppression de l'ancien module r8169..."
+    sudo modprobe -r r8169 2>/dev/null || true
+
+    echo "Activation du nouveau module r8125..."
+    sudo modprobe r8125
+
+    echo "Blacklist de r8169..."
+    echo "blacklist r8169" | sudo tee /etc/modprobe.d/blacklist-r8169.conf > /dev/null
+    sudo update-initramfs -u
+
+    echo "Redémarrage de NetworkManager..."
+    sudo systemctl restart NetworkManager
+
+    sleep 3
+
+    echo "Vérification du driver actif..."
+    sudo lshw -C network | grep driver || true
+
+    echo "État actuel :"
+    echo "   Driver: $(sudo ethtool -i $iface | grep driver)"
+    echo "   Speed:  $(sudo ethtool $iface | grep Speed)"
+
+    # Force la vitesse
+    echo "Forçage de la vitesse à ${target_speed}Mb/s..."
+    sudo ethtool -s $iface speed $target_speed duplex full autoneg on
+    sleep 2
+    echo "   Nouvelle vitesse: $(sudo ethtool $iface | grep Speed)"
+
+    # Rendre le changement permanent via systemd
+    local service_file="/etc/systemd/system/ethernet-speed.service"
+
+    echo "Création du service systemd pour persistance..."
+
+    sudo tee $service_file > /dev/null <<EOF
+[Unit]
+Description=Force Ethernet to ${target_speed}Mbps
+After=network-pre.target
+Before=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/ethtool -s $iface speed $target_speed duplex full autoneg on
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable ethernet-speed.service
+    sudo systemctl start ethernet-speed.service
+
+    echo ""
+    echo "Terminé. Configuration persistante créée."
+    echo "La vitesse sera forcée à ${target_speed}Mb/s à chaque démarrage."
+    echo "Redémarre pour finaliser l'installation."
+    echo ""
+    echo "Si la vitesse reste bridée, vérifie ton câble Ethernet et ton switch/routeur."
+    echo ""
+    echo "Usage futur:"
+    echo "  _update_network_driver       # Force à 1000Mb/s par défaut"
+    echo "  _update_network_driver 2500  # Force à 2500Mb/s"
 }
 
 function _bashrc_update() {
@@ -279,6 +383,7 @@ elif [[ "$CLEAN" == "true" ]]; then
 else
   _bashrc_update
   _check_dns
+  _update_network_driver
   _size_terminal
   _install_themes
   # _create_appimage_shortcut "Ankama_Launcher" "$RESOURCES_DIR/Dofus 3.0-Setup-x86_64.AppImage" "$RESOURCES_DIR/icons/wakfu.png"
