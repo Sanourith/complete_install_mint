@@ -95,7 +95,7 @@ function _update_system() {
     exit 1
   fi
 
-  local packages=(vim curl htop tree build-essential git wget python3-pip)
+  local packages=(vim curl htop tree build-essential git wget python3-pip feh)
   local to_install=()
 
   for package in "${packages[@]}"; do

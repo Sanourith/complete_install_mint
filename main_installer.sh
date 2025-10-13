@@ -350,6 +350,33 @@ function _bashrc_update() {
   echo ""
 }
 
+function _setup_wallpapers() {
+  local wallpaper_script="${SCRIPT_DIR}/z_wallpapers-changer"
+  screens="$1"
+
+  sed -i "s|^TOTAL_SCREENS=\"[^\"]*\"|TOTAL_SCREENS=\"$screens\"|" "$wallpaper_script"
+
+  log_info "Adding wallpaper-changer systemd service..."
+  cat > ~/.config/systemd/user/wallpaper.service <<EOF
+[Unit]
+Description=Automatically changes wallpapers on all screens
+After=graphical.target
+
+[Service]
+Type=simple
+ExecStart=$wallpaper_script
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOF
+
+  systemctl --user daemon-reload
+  systemctl --user enable --now wallpaper.service
+}
+
+
 cleanup() {
   local exit_code=$?
   if [[ $exit_code -ne 0 ]]; then
@@ -381,11 +408,20 @@ elif [[ "$CLEAN" == "true" ]]; then
   # TODO add script
   echo "Clean script"
 else
+  echo ""
+  echo "Do you want to automatize wallpaper_changing ?"
+  read -p "  > How many screens do you have ? (enter a number or press any letter to cancel) > " screens
+
   _bashrc_update
   _check_dns
   _update_network_driver
   _size_terminal
   _install_themes
+  if ! [[ "$screens" =~ ^[0-9]+$ ]]; then
+    echo "Wallpapers won't be changed automatically."
+  else
+    _setup_wallpapers "$screens"
+  fi
   # _create_appimage_shortcut "Ankama_Launcher" "$RESOURCES_DIR/Dofus 3.0-Setup-x86_64.AppImage" "$RESOURCES_DIR/icons/wakfu.png"
 
   log_warning "# Preparing installation for scripts :"
