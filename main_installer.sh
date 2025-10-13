@@ -208,7 +208,6 @@ function _check_dns() {
 }
 
 function _update_network_driver() {
-function _update_network_driver() {
     local repo_url="https://github.com/awesometic/realtek-r8125-dkms.git"
     local workdir="/tmp/realtek-r8125-dkms"
     local target_speed=${1:-1000}
