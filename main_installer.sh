@@ -350,7 +350,7 @@ function _bashrc_update() {
 }
 
 function _setup_wallpapers() {
-  local wallpaper_script="${SCRIPT_DIR}/z_wallpapers-changer"
+  local wallpaper_script="${SCRIPT_DIR}/z_wallpapers-changer.sh"
   screens="$1"
 
   sed -i "s|^TOTAL_SCREENS=\"[^\"]*\"|TOTAL_SCREENS=\"$screens\"|" "$wallpaper_script"
@@ -413,7 +413,7 @@ else
 
   _bashrc_update
   _check_dns
-  _update_network_driver
+  # _update_network_driver
   _size_terminal
   _install_themes
   if ! [[ "$screens" =~ ^[0-9]+$ ]]; then

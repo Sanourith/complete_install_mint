@@ -5,7 +5,7 @@ set -e
 HORIZONTAL_DIR="/home/$USER/Pictures/AIwall"
 VERTICAL_DIR="/home/$USER/Pictures/hnta"
 
-TOTAL_SCREENS=""
+TOTAL_SCREENS="3"
 
 while true; do
   for ((i=0; i<TOTAL_SCREENS; i++)); do
@@ -20,4 +20,4 @@ done
 
 # TO KILL PROGRAM :
 # sudo rm ~/.config/systemd/user/wallpaper.service
-# pkill -f wallpaper-changer.sh
+# pkill -f wallpapers-changer.sh
