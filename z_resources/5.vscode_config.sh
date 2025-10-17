@@ -48,6 +48,7 @@ FAILED_COUNT=0
 CONFIG_APPLIED=0
 VSCODE_INSTALLED=0
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VSCODE_CONFIG_DIR="$HOME/.config/Code/User"
 SETTINGS_FILE="$VSCODE_CONFIG_DIR/settings.json"
 
@@ -455,6 +456,41 @@ backup_existing_config() {
         fi
     fi
     return 1
+}
+
+function _apply_vscode_config() {
+  log "# Applying VSCode configuration..."
+
+  local settings_dir="$HOME/.config/Code/User"
+  local settings_file="$settings_dir/settings.json"
+  local config_source="$SCRIPT_DIR/configs/vscode_settings.json"
+
+  # Vérifier que le fichier source existe
+  if [[ ! -f "$config_source" ]]; then
+    error "Configuration file not found: $config_source"
+    return 1
+  fi
+
+  # Créer le dossier de config VSCode si nécessaire
+  if [[ ! -d "$settings_dir" ]]; then
+    log "Creating VSCode config directory..."
+    mkdir -p "$settings_dir"
+  fi
+
+  # Backup de la config existante
+  if [[ -f "$settings_file" ]]; then
+    local backup_file="${settings_file}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$settings_file" "$backup_file"
+    log "Existing config backed up to: ${backup_file##*/}"
+  fi
+
+  # Copier la nouvelle config
+  if cp "$config_source" "$settings_file"; then
+    success "VSCode configuration applied successfully"
+  else
+    error "Failed to apply VSCode configuration"
+    return 1
+  fi
 }
 
 create_vscode_config() {
@@ -1003,7 +1039,10 @@ if ! install_all_extensions; then
     warning "Issues during extensions installation"
 fi
 
-if ! create_vscode_config; then
+# if ! create_vscode_config; then
+#     warning "Issue during configuration creation"
+# fi
+if ! _apply_vscode_config; then
     warning "Issue during configuration creation"
 fi
 

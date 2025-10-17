@@ -347,7 +347,7 @@ function _bashrc_update() {
   local bashrc="$HOME/.bashrc"
 
   if [[ ! -f "$bashrc.bkp" ]]; then
-    cp "$bahrc" "$bashrc.bkp"
+    cp "$bashrc" "$bashrc.bkp"
     log_info "Backup created: $bashrc.bkp"
   fi
 
@@ -399,7 +399,7 @@ function _setup_wallpapers() {
     return 1
   fi
 
-  if ! commande -v feh $> /dev/null; then
+  if ! command -v feh $> /dev/null; then
     log_warning "feh is not installed... Installing..."
     sudo apt install -y feh || {
       log_error "Failed to install feh"
@@ -439,7 +439,6 @@ EOF
   log_success "Wallpaper service installed and started"
   log_info "Check status with: systemctl --user status wallpaper.service"
 }
-
 
 cleanup() {
   local exit_code=$?

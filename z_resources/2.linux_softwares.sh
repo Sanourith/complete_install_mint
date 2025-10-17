@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 # LOGS COLOR
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,16 +30,17 @@ SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 DEBUG="$1"
 if [[ "$DEBUG" == "true" ]]; then
   set -x
+  log_warning "DEBUG mode activated"
 fi
 
 ###################
 #    FUNCTIONS    #
 ###################
 function _install_vlc() {
-  echo "VLC MEDIA PLAYER INSTALLATION"
+  log_info "# Installing VLC MEDIA PLAYER..."
 
   if command -v vlc &>/dev/null; then
-    echo "      VLC already installed"
+    echo "       VLC already installed"
     return 0
   fi
 
@@ -52,47 +51,67 @@ function _install_vlc() {
 function _install_discord() {
   log_info "# Installing DISCORD..."
 
-  if command -v discord &>/dev/null || [ -f "/usr/bin/discord" ]; then
-    echo "      Discord already installed"
+  if command -v discord &>/dev/null; then
+    echo "       Discord already installed"
     return 0
   fi
 
-  echo "Downloading Discord before installation..."
+  log_info "Downloading Discord..."
   local temp_file=$(mktemp --suffix=.deb)
 
-  if wget -q "https://discord.com/api/download?platform=linux&format=deb" -O "$temp_file"; then
-    # Installer les dépendances manquantes potentielles
-    sudo apt install -f -y
-    sudo dpkg -i "$temp_file" || sudo apt install -f -y
-    rm -f "$temp_file"
-    log_success "Discord installed"
-  else
-    log_error "Error downloading Discord"
+  if ! wget -q --show-progress "https://discord.com/api/download?platform=linux&format=deb" -O "$temp_file"; then
+    log_error "Failed to download Discord"
     rm -f "$temp_file"
     return 1
   fi
+
+  log_info "Installing Discord package..."
+  if sudo dpkg -i "$temp_file" 2>/dev/null; then
+    log_success "Discord installed"
+  else
+    log_warning "Fixing dependencies..."
+    if sudo apt install -f -y; then
+      log_success "Discord installed (with dependency fixes)"
+    else
+      log_error "Failed to install Discord"
+      rm -f "$temp_file"
+      return 1
+    fi
+  fi
+
+  rm -f "$temp_file"
 }
 
 function _install_brave() {
   log_info "# Installing BRAVE BROWSER..."
 
   if command -v brave-browser &>/dev/null; then
-    echo "      Brave already installed"
+    echo "       Brave already installed"
     return 0
   fi
 
   sudo mkdir -p /usr/share/keyrings
 
-  if [ ! -f "/usr/share/keyrings/brave-browser-archive-keyring.gpg" ]; then
-    sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
-      https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+  local keyring_file="/usr/share/keyrings/brave-browser-archive-keyring.gpg"
+  if [[ ! -f "$keyring_file" ]]; then
+    log_info "Downloading Brave GPG key..."
+    if ! sudo curl -fsSLo "$keyring_file" \
+      https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg; then
+      log_error "Failed to download Brave GPG key"
+      return 1
+    fi
   fi
 
   local repo_file="/etc/apt/sources.list.d/brave-browser-release.list"
-  if [ ! -f "$repo_file" ]; then
-    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | \
+  if [[ ! -f "$repo_file" ]]; then
+    log_info "Adding Brave repository..."
+    echo "deb [signed-by=$keyring_file] https://brave-browser-apt-release.s3.brave.com/ stable main" | \
       sudo tee "$repo_file" > /dev/null
-    sudo apt update
+
+    if ! sudo apt update; then
+      log_error "Failed to update package list after adding Brave repo"
+      return 1
+    fi
   fi
 
   sudo apt install -y brave-browser
@@ -102,16 +121,20 @@ function _install_brave() {
 function _install_steam() {
   log_info "# Installing STEAM..."
 
-  if command -v steam &>/dev/null || flatpak list | grep -q com.valvesoftware.Steam; then
-    echo "      Steam already installed"
+  if command -v steam &>/dev/null; then
+    echo "       Steam already installed"
     return 0
   fi
 
-  export DEBIAN_FRONTEND=noninteractive
+  log_info "Enabling multiverse repository..."
+  sudo add-apt-repository multiverse -y
 
-  echo | sudo add-apt-repository multiverse -y 2>/dev/null || true
+  if ! sudo apt update; then
+    log_error "Failed to update package list"
+    return 1
+  fi
 
-  sudo apt update
+  log_info "Installing Steam (this may take a while)..."
   sudo apt install -y steam
   log_success "Steam installed"
 }
@@ -119,28 +142,48 @@ function _install_steam() {
 function _install_vscode() {
   log_info "# Installing VSCODE..."
 
-  if command -v code &>/dev/null || flatpak list | grep -q com.visualstudio.code; then
-    echo "      VS Code already installed"
+  if command -v code &>/dev/null; then
+    echo "       VS Code already installed"
     return 0
   fi
 
-  wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-  sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
-  echo "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/repos/vscode stable main" \
-    | sudo tee /etc/apt/sources.list.d/vscode.list
-  sudo apt update && sudo apt install -y code
-  rm -f packages.microsoft.gpg
+  log_info "Downloading Microsoft GPG key..."
+  local temp_key=$(mktemp)
 
+  if ! wget -qO "$temp_key" https://packages.microsoft.com/keys/microsoft.asc; then
+    log_error "Failed to download Microsoft GPG key"
+    rm -f "$temp_key"
+    return 1
+  fi
+
+  gpg --dearmor < "$temp_key" | sudo tee /etc/apt/trusted.gpg.d/packages.microsoft.gpg > /dev/null
+  rm -f "$temp_key"
+
+  log_info "Adding VS Code repository..."
+  echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" \
+    | sudo tee /etc/apt/sources.list.d/vscode.list > /dev/null
+
+  if ! sudo apt update; then
+    log_error "Failed to update package list after adding VS Code repo"
+    return 1
+  fi
+
+  sudo apt install -y code
   log_success "VS Code installed"
 }
 
 cleanup() {
   local exit_code=$?
+
   if [[ $exit_code -ne 0 ]]; then
-      log_error "Script finished with error. (code: $exit_code)"
+    log_error "Script finished with errors (exit code: $exit_code)"
+  else
+    log_success "Software installation script completed"
   fi
-  sudo apt autoremove -y
-  sudo apt autoclean
+
+  log_info "Cleaning up..."
+  sudo apt autoremove -y &>/dev/null
+  sudo apt autoclean &>/dev/null
   print_separator
 }
 trap cleanup EXIT
@@ -150,11 +193,13 @@ trap cleanup EXIT
 ###################
 print_separator
 log_info "Starting script: $SCRIPT_NAME"
-[[ $DEBUG == true ]] && log_warning "DEBUG activated"
 print_separator
 
-_install_vscode
-_install_steam
-_install_brave
-_install_discord
-_install_vlc
+_install_vscode || log_warning "VS Code installation failed, continuing..."
+_install_steam || log_warning "Steam installation failed, continuing..."
+_install_brave || log_warning "Brave installation failed, continuing..."
+_install_discord || log_warning "Discord installation failed, continuing..."
+_install_vlc || log_warning "VLC installation failed, continuing..."
+
+print_separator
+log_success "Software installation completed"
