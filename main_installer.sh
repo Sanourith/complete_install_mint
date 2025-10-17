@@ -56,7 +56,7 @@ eval set -- "$OPTS"
 
 while true; do
   case "$1" in
-    -d|--debug) DEBUG=true; set -x; shift; ;;
+    -d|--debug) DEBUG=true; shift; ;;
     -h|--help) _show_help; exit 0; ;;
     -s|--save) SAVE=true; shift; ;;
     -c|--clean) CLEAN=true; shift; ;;
@@ -75,57 +75,79 @@ RESOURCES_DIR="$SCRIPT_DIR/z_resources"
 function _install_scripts() {
   local success_count=0
   failed_scripts=()
+  local stopped=false
 
   for script in "${scripts[@]}"; do
     print_separator
-    script_name=$(basename "$script")
+    local script_name=$(basename "$script")
     log_warning "Executing $script_name..."
     print_separator
 
     chmod +x "$script"
 
-    if bash "$script" "$DEBUG"; then
+    if [[ "$DEBUG" == "true" ]]; then
+      bash -x "$script"
+    else
+      bash "$script"
+    fi
+
+    local exit_code=$?
+    if [[ $exit_code -eq 0 ]]; then
       log_success "$script_name finished successfully"
       ((++success_count))
-      print_separator
     else
-      exit_code=$?
       log_error "$script_name failed (code: $exit_code)"
       failed_scripts+=("$script")
 
       read -p "Continue with other scripts ? (y/n) " reply
       if [[ ! "$reply" =~ ^[yY]$ ]]; then
         log_warning "Installation stopped"
-        error="1"
+        stopped=true
         break
       fi
     fi
+
+    print_separator
     echo ""
-    if [[ "$error" == "1" ]]; then
-      log_error "$script_name failed"
-    fi
   done
 
-  log_success "✅ Finished script : $success_count/${#scripts[@]}"
-  if [[ "${#failed_scripts[@]}" -gt 0 ]]; then
-    log_error "Failed script :"
-    for script in "${failed_scripts[@]}"; do
-      echo "       xx $script"
-    done
-    log_error "You may try to launch scripts manually..."
+  if [[ "$stopped" == "true" ]]; then
+    log_warning "Installation interrupted: $success_count script(s) executed before stopping"
   else
-    log_success "Everything's done, enjoy your Linux !"
+    log_success "✅ Finished: $success_count/${#scripts[@]} script(s) succeeded"
   fi
 
+  if [[ ${#failed_scripts[@]} -gt 0 ]]; then
+    log_error "Failed scripts:"
+    for script in "${failed_scripts[@]}"; do
+      echo "       ❌ $script"
+    done
+    echo ""
+    log_warning "You may try to launch failed scripts manually from $RESOURCES_DIR"
+  else
+    log_success "🎉 Everything's done, enjoy your Linux!"
+  fi
+  print_separator
 }
 
 function _install_themes() {
   log_info "# Copying themes for free use..."
-  mkdir -p ~/.themes
-  if cp -r "$RESOURCES_DIR/themes/"* ~/.themes/; then
-    log_success "Themes pre-installed successfully."
+
+  local themes_source="$RESOURCES_DIR/themes"
+  local themes_dest="$HOME/.themes"
+
+  if [[ ! -d "$themes_source" ]] || [[ -z "$(ls -A "$themes_source" 2>/dev/null)" ]]; then
+    log_warning "No themes found in $themes_source. Skipping..."
+    return 0
+  fi
+
+  mkdir -p "$themes_dest"
+
+  if cp -r "$themes_source/"* "$themes_dest/"; then
+    log_success "Themes pre-installed successfully to $themes_dest"
   else
     log_error "Error copying theme files."
+    return 1
   fi
   echo ""
 }
@@ -133,8 +155,9 @@ function _install_themes() {
 function _size_terminal() {
   log_info "# Sizing terminal 120x30"
   terminal_uid=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d "'")
-  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-columns 120
-  log_success "Done"
+  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-columns 150
+  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-rows 45
+  log_success "Terminal sized to 120x30"
   echo ""
 }
 
@@ -191,19 +214,29 @@ function _size_terminal() {
 
 function _check_dns() {
   log_info "# Update DNS & make it immutable..."
-  if ! grep -q "1.0.0.1" /etc/resolv.conf; then
-    sudo rm /etc/resolv.conf || true
-    sudo touch /etc/resolv.conf
-    echo "nameserver 1.0.0.1" | sudo tee -a /etc/resolv.conf > /dev/null
-    echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf > /dev/null
-    echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf > /dev/null
-    sudo chattr +i /etc/resolv.conf
-    log_success "DNS updated successfully"
+
+  local resolv_file="/etc/resolv.conf"
+
+  if ! grep -q "1.0.0.1" $resolv_file; then
+    if [[ ! -f "$resolv_file.bkp" ]]; then
+      sudo cp "$resolv_file" "$resolv_file.bkp"
+      log_info "Backup created: $resolv_file.bkp"
+    fi
+
+    sudo chattr -i "$resolv_file" 2>/dev/null || true
+
+    sudo rm $resolv_file || true
+    sudo touch $resolv_file
+    echo "nameserver 1.0.0.1" | sudo tee -a $resolv_file > /dev/null
+    echo "nameserver 1.1.1.1" | sudo tee -a $resolv_file > /dev/null
+    echo "nameserver 8.8.8.8" | sudo tee -a $resolv_file > /dev/null
+    sudo chattr +i $resolv_file
+    log_success "DNS updated successfully (file is now immutable)"
   else
     echo "> DNS already up-to-date."
   fi
 
-  cat /etc/resolv.conf
+  cat "$resolv_file"
   echo ""
 }
 
@@ -311,7 +344,15 @@ EOF
 }
 
 function _bashrc_update() {
+  local bashrc="$HOME/.bashrc"
+
+  if [[ ! -f "$bashrc.bkp" ]]; then
+    cp "$bahrc" "$bashrc.bkp"
+    log_info "Backup created: $bashrc.bkp"
+  fi
+
   log_info "# Adding commands to ~/.bashrc ..."
+
   if ! grep -q "alias steam_games=" ~/.bashrc; then
     echo "alias steam_games='xdg-open \"$HOME/.steam/debian-installation/steamapps/\"'" >> ~/.bashrc
     log_success "steam_games - added"
@@ -351,28 +392,52 @@ function _bashrc_update() {
 
 function _setup_wallpapers() {
   local wallpaper_script="${SCRIPT_DIR}/z_wallpapers-changer.sh"
-  screens="$1"
+  local screens="$1"
 
-  sed -i "s|^TOTAL_SCREENS=\"[^\"]*\"|TOTAL_SCREENS=\"$screens\"|" "$wallpaper_script"
+  if [[ ! -f "$wallpaper_script" ]]; then
+    log_error "Wallpaper script not found: $wallpaper_script"
+    return 1
+  fi
 
-  log_info "Adding wallpaper-changer systemd service..."
+  if ! commande -v feh $> /dev/null; then
+    log_warning "feh is not installed... Installing..."
+    sudo apt install -y feh || {
+      log_error "Failed to install feh"
+      return 1
+    }
+  fi
+
+  sed -i "s|^TOTAL_SCREENS=.*|TOTAL_SCREENS=\"$screens\"|" "$wallpaper_script"
+  chmod +x "$wallpaper_script"
+
+  log_info "Creating wallpaper-changer systemd service..."
+
+  mkdir -p ~/.config/systemd/user
+
   cat > ~/.config/systemd/user/wallpaper.service <<EOF
 [Unit]
 Description=Automatically changes wallpapers on all screens
 After=graphical.target
+Wants=graphical.target
 
 [Service]
 Type=simple
 ExecStart=$wallpaper_script
-Restart=always
+Restart=on-failure
 RestartSec=10
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=default.target
 EOF
 
   systemctl --user daemon-reload
-  systemctl --user enable --now wallpaper.service
+  systemctl --user enable wallpaper.service
+  systemctl --user start wallpaper.service
+
+  log_success "Wallpaper service installed and started"
+  log_info "Check status with: systemctl --user status wallpaper.service"
 }
 
 
@@ -393,7 +458,7 @@ trap cleanup EXIT
 print_separator
 log_info "Starting script: $SCRIPT_NAME"
 log_info "Script directory: $SCRIPT_DIR"
-[[ $DEBUG == true ]] && log_warning "DEBUG activated"
+[[ $DEBUG == true ]] && { set -x; log_warning "DEBUG activated"; }
 print_separator
 
 cd "$SCRIPT_DIR"
@@ -424,9 +489,10 @@ else
   # _create_appimage_shortcut "Ankama_Launcher" "$RESOURCES_DIR/Dofus 3.0-Setup-x86_64.AppImage" "$RESOURCES_DIR/icons/wakfu.png"
 
   log_warning "# Preparing installation for scripts :"
-  readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f | sort)
+  readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f ! -name "*_dsbl.sh" | sort)
+
   if [ ${#scripts[@]} -eq 0 ]; then
-    log_error "No script found into z_resources"
+    log_error "No script found into $RESOURCES_DIR"
     exit 1
   else
     for i in "${!scripts[@]}"; do
@@ -438,7 +504,7 @@ else
 
   read -p "Do you want to proceed with global installation ? (y/n) " answer
   if [[ ! "$answer" =~ ^[yY]$ ]]; then
-    echo "Exiting. > You can also launch scripts manually from z_resources directory"
+    echo "Exiting. > You can also launch scripts manually from $RESOURCES_DIR"
     exit 0
   else
     _install_scripts
@@ -448,7 +514,7 @@ fi
 echo ""
 log_warning "RECOMMENDED ACTIONS :"
 echo "       >> INSTALL GRAPHIC DRIVER using ControlCenter"
-echo "       ** Reboot your computer"
+echo "       ** Reboot your computer  //  or run 'source ~/.bashrc' to apply changes"
 echo "       ** Configure keyboard shortcut"
 echo "       ** Customize your panel & widgets"
 print_separator
