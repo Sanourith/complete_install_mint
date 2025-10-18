@@ -244,31 +244,31 @@ function _update_network_driver() {
   iface=$(ip -br link | awk '$1 ~ /^enp|^eth/ {print $1; exit}')
 
   if [ -z "$iface" ]; then
-      echo "❌ Aucune interface Ethernet détectée (enp* ou eth*)"
+      echo "❌ No ethernet connection detected (enp* or eth*)"
       exit 1
   fi
 
-  echo "🔍 Interface détectée : $iface"
+  echo "Interface found : $iface"
 
   # --- Vérification de la vitesse actuelle ---
   speed=$(sudo ethtool "$iface" 2>/dev/null | grep "Speed:" | awk '{print $2}')
 
   if [ -z "$speed" ]; then
-      echo "❌ Impossible de récupérer la vitesse actuelle de $iface"
+      echo "❌ Speed of $iface unknow... skipping"
       exit 1
   fi
 
-  echo "⚙️  Vitesse actuelle : $speed"
+  echo "⚙️  Speed : $speed"
 
   # --- Si la vitesse n'est pas 2500Mb/s, on force la bonne config ---
   if [ "$speed" != "2500Mb/s" ]; then
-      echo "🚀 Passage de $speed à 2500Mb/s..."
+      echo "🚀 Changing speed from $speed to 2500Mb/s..."
       sudo ethtool -s "$iface" speed 2500 duplex full autoneg on
       sleep 1
       new_speed=$(sudo ethtool "$iface" | grep "Speed:" | awk '{print $2}')
-      echo "✅ Nouvelle vitesse : $new_speed"
+      echo "✅ New max_speed : $new_speed"
   else
-      echo "✅ Déjà à 2500Mb/s — rien à faire."
+      echo "✅ Already at 2500Mb/s — Nothing to do"
   fi
   sudo systemctl restart NetworkManager
   sleep 5
