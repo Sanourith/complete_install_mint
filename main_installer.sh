@@ -156,8 +156,8 @@ function _size_terminal() {
   log_info "# Sizing terminal 120x30"
   terminal_uid=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d "'")
   gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-columns 150
-  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-rows 45
-  log_success "Terminal sized to 120x30"
+  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-rows 30
+  log_success "Terminal sized to 150x30"
   echo ""
 }
 
