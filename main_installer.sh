@@ -472,19 +472,19 @@ elif [[ "$CLEAN" == "true" ]]; then
   echo "Clean script"
 else
   echo ""
-  echo "Do you want to automatize wallpaper_changing ?"
-  read -p "  > How many screens do you have ? (enter a number or press any letter to cancel) > " screens
+  # echo "Do you want to automatize wallpaper_changing ?"
+  # read -p "  > How many screens do you have ? (enter a number or press any letter to cancel) > " screens
 
   _bashrc_update
   _check_dns
   # _update_network_driver
   _size_terminal
   _install_themes
-  if ! [[ "$screens" =~ ^[0-9]+$ ]]; then
-    echo "Wallpapers won't be changed automatically."
-  else
-    _setup_wallpapers "$screens"
-  fi
+  # if ! [[ "$screens" =~ ^[0-9]+$ ]]; then
+  #   echo "Wallpapers won't be changed automatically."
+  # else
+  #   _setup_wallpapers "$screens"
+  # fi
   # _create_appimage_shortcut "Ankama_Launcher" "$RESOURCES_DIR/Dofus 3.0-Setup-x86_64.AppImage" "$RESOURCES_DIR/icons/wakfu.png"
 
   log_warning "# Preparing installation for scripts :"
