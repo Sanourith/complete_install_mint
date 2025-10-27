@@ -564,6 +564,13 @@ print_summary() {
   echo
 }
 
+bin_version() {
+  sudo rm -f /usr/local/bin/webstorm
+  sudo ln -s /opt/webstorm/bin/webstorm /usr/local/bin/webstorm
+  sed -i 's|Exec=.*|Exec="/opt/webstorm/bin/webstorm" %f|' ~/.local/share/applications/webstorm.desktop
+  update-desktop-database ~/.local/share/applications/ 2>/dev/null || true
+}
+
 print_uninstall_info() {
   echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${YELLOW}UNINSTALL INSTRUCTIONS${NC}"
@@ -637,6 +644,7 @@ fi
 create_symlink
 create_desktop_shortcut
 create_webstorm_config
+bin_version
 cleanup_archive
 
 if ! verify_installation; then
