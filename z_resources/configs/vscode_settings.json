@@ -1,6 +1,6 @@
 {
     // === APPARENCE & THÈME - NIVEAU DIEU ===
-    "workbench.colorTheme": "Abyss",
+    "workbench.colorTheme": "GitHub Dark High Contrast",
     "workbench.iconTheme": "material-icon-theme",
     "workbench.productIconTheme": "fluent-icons",
     "window.titleBarStyle": "custom",
@@ -306,7 +306,7 @@
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#61dafb",
         "terminalCursor.foreground": "#61dafb",
-        "editor.selectionBackground": "#264f7840",
+        "editor.selectionBackground": "#b0b89d9c",
         "editor.selectionHighlightBackground": "#264f7820",
         "editor.wordHighlightBackground": "#575757B0",
         "editor.wordHighlightStrongBackground": "#004972B0",
