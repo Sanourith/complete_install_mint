@@ -273,6 +273,76 @@ function _update_network_driver() {
   sudo systemctl restart NetworkManager
   sleep 5
   echo "---- Network updated"
+
+
+  echo "Creating robust systemd service..."
+
+# --- Robust script ---
+  sudo tee /usr/local/bin/force-ethernet-speed.sh > /dev/null <<'EOF'
+#!/usr/bin/env bash
+# Force Ethernet interface to 2500Mb/s (2.5 Gbps) reliably at boot
+
+# Wait up to 20 seconds for an UP ethernet interface (enp* or eth*)
+for i in $(seq 1 40); do
+    iface=$(ip -br link show up 2>/dev/null | awk '$1 ~ /^enp|^eth/ && /UP/ {print $1; exit}')
+    [ -n "$iface" ] && break
+    sleep 0.5
+done
+
+if [ -z "$iface" ]; then
+    echo "No UP ethernet interface detected (enp*/eth*) – skipping" >&2
+    exit 0
+fi
+
+current_speed=$(ethtool "$iface" 2>/dev/null | grep -i "Speed:" | awk '{print $2}')
+
+if [ "$current_speed" = "2500Mb/s" ]; then
+    echo "Interface $iface already at 2500Mb/s"
+    exit 0
+fi
+
+echo "Interface $iface currently at $current_speed → forcing 2500Mb/s"
+ethtool -s "$iface" speed 2500 duplex full autoneg on
+
+# Gentle restart of only the affected connection (no full NetworkManager restart)
+sleep 2
+conn_name=$(nmcli -t -f NAME,DEVICE connection show --active | awk -F: -v dev="$iface" '$2==dev {print $1}')
+if [ -n "$conn_name" ]; then
+    nmcli connection down "$conn_name" >/dev/null 2>&1
+    nmcli connection up   "$conn_name" >/dev/null 2>&1
+fi
+
+echo "Speed successfully forced to 2500Mb/s on $iface"
+EOF
+
+  sudo chmod +x /usr/local/bin/force-ethernet-speed.sh
+
+# --- Robust systemd service ---
+  sudo tee /etc/systemd/system/force-ethernet-speed.service > /dev/null <<'EOF'
+[Unit]
+Description=Force Ethernet interface to 2.5 Gbps at boot
+After=network.target NetworkManager-wait-online.service
+Wants=network.target NetworkManager-wait-online.service
+Requires=NetworkManager-wait-online.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/force-ethernet-speed.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # Enable and start
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now force-ethernet-speed.service
+
+  echo "---- Network speed enforcement service installed and running"
+  systemctl status force-ethernet-speed.service --no-pager -l
 }
 
 function _bashrc_update() {

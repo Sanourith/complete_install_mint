@@ -1,6 +1,6 @@
 {
     // === APPARENCE & THÈME - NIVEAU DIEU ===
-    "workbench.colorTheme": "GitHub Dark High Contrast",
+    "workbench.colorTheme": "GitHub Dark Default",
     "workbench.iconTheme": "material-icon-theme",
     "workbench.productIconTheme": "fluent-icons",
     "window.titleBarStyle": "custom",
