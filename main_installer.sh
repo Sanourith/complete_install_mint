@@ -241,11 +241,16 @@ function _check_dns() {
 }
 
 function _update_network_driver() {
+  if ! command -v ip 2>/dev/null; then
+    sudo apt update
+    sudo apt install -y iproute2
+  fi
   iface=$(ip -br link | awk '$1 ~ /^enp|^eth/ {print $1; exit}')
 
   if [ -z "$iface" ]; then
       echo "❌ No ethernet connection detected (enp* or eth*)"
-      exit 1
+      echo "Won't fix ethernet without stable connection"
+      return 0
   fi
 
   echo "Interface found : $iface"
