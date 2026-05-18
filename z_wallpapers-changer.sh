@@ -5,7 +5,7 @@ set -e
 HORIZONTAL_DIR="/home/$USER/Pictures/AIwall"
 VERTICAL_DIR="/home/$USER/Pictures/hnta"
 
-TOTAL_SCREENS="3"
+TOTAL_SCREENS="1"
 
 while true; do
   for ((i=0; i<TOTAL_SCREENS; i++)); do
