@@ -3,6 +3,12 @@
 #####################################
 ## PREPARATION SAUVEGARDE COMPLETE ##
 #####################################
+# Si besoin, monter le disque dur :
+sudo mkdir -p /mnt/sanoudde
+sudo mount -t ntfs-3g /dev/sda1 /mnt/sanoudde
+# Démonter le disque après usage
+sudo umount /mnt/sanoudde
+
 path_1="/media/sanou/SSD4OWL/"
 path_2="/media/sanou/SanouDDE/"
 rsync -ah --info=progress2 $path_1 $path_2
