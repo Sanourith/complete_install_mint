@@ -12,6 +12,7 @@ sudo umount /mnt/sanoudde
 path_1="/media/sanou/SSD4OWL/"
 path_2="/media/sanou/SanouDDE/"
 rsync -ah --info=progress2 $path_1 $path_2
+rsync -ah --info=progress2 --exclude="Genshin_mods/" --partial --append-verify "$path_1" "$path_2"
 
 ##############################
 ## DESINSTALLER UN LOGICIEL ##

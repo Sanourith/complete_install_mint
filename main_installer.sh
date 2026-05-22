@@ -10,6 +10,10 @@
 
 set -e
 
+# set the current path to the script location
+script=$(readlink -f "$0")
+cd "$(dirname "$script")"
+
 # LOGS COLOR
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -160,57 +164,6 @@ function _size_terminal() {
   log_success "Terminal sized to 150x30"
   echo ""
 }
-
-# function _create_appimage_shortcut() {
-#   app_name="$1"
-#   app_path="$2"
-#   app_icon="$3"
-
-#   log_info "# Add Ankama_Launcher to executables..."
-
-#   if [[ -z "$app_name" || -z "$app_path" ]]; then
-#     log_error "Error: missing elements -- to install app_image use :"
-#     echo "    _create_appimage_shortcut <app_name> <app_path> <app_icon>"
-#     return 1
-#   fi
-
-#   if [[ -n "$app_path" ]]; then
-#     log_warning "$app_name AppImage is not into repository. Do you want to download it ?"
-#     read -p "(y/n)" answer
-#     if [[ "$answer" =~ ^[yY]$ ]]; then
-#       # LIST OF APPIMAGES YOU WANT TO USE
-#       if [[ "$app_name" == "Ankama_Launcher" ]]; then
-#         # cd "z_resources"
-#         # wget -O "Ankama_Launcher.AppImage" "https://download.ankama.com/launcher-dofus/full/linux"
-#         # cd -
-#       fi
-#     # OTHER APP
-#     else
-#       log_warning "$app_name not installed"
-#       return 1
-#     fi
-#   fi
-
-#   local desktop_dir="$HOME/.local/share/applications"
-#   mkdir -p "$desktop_dir"
-
-#   local desktop_file="$desktop_dir/${app_name}.desktop"
-#   cat > "$desktop_file" <<EOF
-# [Desktop Entry]
-# Name=$app_name
-# Exec=env DISPLAY=:0.0 $app_path
-# Icon=$app_icon
-# Type=Application
-# StartupNotify=true
-# Terminal=false
-# Categories=Game;
-# EOF
-
-#   chmod +x "$desktop_file"
-#   update-desktop-database "$desktop_dir" >/dev/null 2>&1
-
-#   log_success "App shortcut: $app_name added successfully"
-# }
 
 function _check_dns() {
   log_info "# Update DNS & make it immutable..."
@@ -364,7 +317,6 @@ function _bashrc_update() {
     echo "alias steam_games='xdg-open \"$HOME/.steam/debian-installation/steamapps/\"'" >> ~/.bashrc
     log_success "steam_games - added"
     echo "              >   used to open non-Steam added games folders"
-
   else
     echo "      ** steam_games - already in use"
     echo "              >   used to open non-Steam added games folders"
@@ -479,20 +431,12 @@ elif [[ "$CLEAN" == "true" ]]; then
   echo "Clean script"
 else
   echo ""
-  # echo "Do you want to automatize wallpaper_changing ?"
-  # read -p "  > How many screens do you have ? (enter a number or press any letter to cancel) > " screens
 
   _bashrc_update
   _check_dns
   _update_network_driver
   _size_terminal
   _install_themes
-  # if ! [[ "$screens" =~ ^[0-9]+$ ]]; then
-  #   echo "Wallpapers won't be changed automatically."
-  # else
-  #   _setup_wallpapers "$screens"
-  # fi
-  # _create_appimage_shortcut "Ankama_Launcher" "$RESOURCES_DIR/Dofus 3.0-Setup-x86_64.AppImage" "$RESOURCES_DIR/icons/wakfu.png"
 
   log_warning "# Preparing installation for scripts :"
   readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f ! -name "*_dsbl.sh" | sort)
