@@ -10,43 +10,45 @@
 
 set -e
 
-# set the current path to the script location
+# Set the current path to the script location
 script=$(readlink -f "$0")
 cd "$(dirname "$script")"
 
-# LOGS COLOR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+RESOURCES_DIR="$SCRIPT_DIR/z_resources"
+
+# ==============================================================================
+# LOGS
+# ==============================================================================
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# LOGGING FUNCTION
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
-}
-print_separator() {
-    echo "============================================================================="
-}
+log_info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error()   { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+print_separator() { echo "============================================================================="; }
 
-# TODO - add help complete dash
+# ==============================================================================
+# ARGS
+# ==============================================================================
+
 function _show_help() {
   echo "Usage: $0 [OPTIONS]"
   echo ""
   echo "Options:"
-  echo "  -d, --debug    Enable debug mode"
+  echo "  -d, --debug    Enable debug mode (bash -x on each sub-script)"
   echo "  -h, --help     Show this help message"
   echo "  -s, --save     Run backup script"
   echo "  -c, --clean    Run cleanup script"
+  echo ""
+  echo "Disable a resource script by renaming it with '_dsbl' suffix."
+  echo "Example: 3.devops_softwares_dsbl.sh"
 }
 
 DEBUG="false"
@@ -54,36 +56,33 @@ SAVE="false"
 CLEAN="false"
 
 OPTGET=$(which getopt)
-OPTS=$($OPTGET -o hdsc -l debug,help,save,clean -- "$@")
-
+OPTS=$($OPTGET -o hdsc --long debug,help,save,clean -- "$@")
 eval set -- "$OPTS"
 
 while true; do
   case "$1" in
-    -d|--debug) DEBUG=true; shift; ;;
-    -h|--help) _show_help; exit 0; ;;
-    -s|--save) SAVE=true; shift; ;;
-    -c|--clean) CLEAN=true; shift; ;;
-    --) shift; break; ;;
-    *) echo "Unknown option: $1" >&2; exit 1; ;;
+    -d|--debug) DEBUG=true;  shift ;;
+    -h|--help)  _show_help;  exit 0 ;;
+    -s|--save)  SAVE=true;   shift ;;
+    -c|--clean) CLEAN=true;  shift ;;
+    --) shift; break ;;
+    *)  log_error "Unknown option: $1"; exit 1 ;;
   esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-RESOURCES_DIR="$SCRIPT_DIR/z_resources"
+# ==============================================================================
+# FUNCTIONS
+# ==============================================================================
 
-###################
-#    FUNCTIONS    #
-###################
 function _install_scripts() {
   local success_count=0
-  failed_scripts=()
+  local failed_scripts=()
   local stopped=false
 
   for script in "${scripts[@]}"; do
     print_separator
-    local script_name=$(basename "$script")
+    local script_name
+    script_name=$(basename "$script")
     log_warning "Executing $script_name..."
     print_separator
 
@@ -100,12 +99,12 @@ function _install_scripts() {
       log_success "$script_name finished successfully"
       ((++success_count))
     else
-      log_error "$script_name failed (code: $exit_code)"
-      failed_scripts+=("$script")
+      log_error "$script_name failed (exit code: $exit_code)"
+      failed_scripts+=("$script_name")
 
-      read -p "Continue with other scripts ? (y/n) " reply
+      read -rp "Continue with other scripts? (y/n) " reply
       if [[ ! "$reply" =~ ^[yY]$ ]]; then
-        log_warning "Installation stopped"
+        log_warning "Installation stopped by user."
         stopped=true
         break
       fi
@@ -116,18 +115,18 @@ function _install_scripts() {
   done
 
   if [[ "$stopped" == "true" ]]; then
-    log_warning "Installation interrupted: $success_count script(s) executed before stopping"
+    log_warning "Installation interrupted: $success_count script(s) ran before stopping."
   else
-    log_success "✅ Finished: $success_count/${#scripts[@]} script(s) succeeded"
+    log_success "✅ Finished: $success_count/${#scripts[@]} script(s) succeeded."
   fi
 
   if [[ ${#failed_scripts[@]} -gt 0 ]]; then
     log_error "Failed scripts:"
-    for script in "${failed_scripts[@]}"; do
-      echo "       ❌ $script"
+    for s in "${failed_scripts[@]}"; do
+      echo "       ❌ $s"
     done
     echo ""
-    log_warning "You may try to launch failed scripts manually from $RESOURCES_DIR"
+    log_warning "You may try to run failed scripts manually from: $RESOURCES_DIR"
   else
     log_success "🎉 Everything's done, enjoy your Linux!"
   fi
@@ -135,112 +134,126 @@ function _install_scripts() {
 }
 
 function _install_themes() {
-  log_info "# Copying themes for free use..."
+  log_info "Copying themes..."
 
   local themes_source="$RESOURCES_DIR/themes"
   local themes_dest="$HOME/.themes"
 
   if [[ ! -d "$themes_source" ]] || [[ -z "$(ls -A "$themes_source" 2>/dev/null)" ]]; then
-    log_warning "No themes found in $themes_source. Skipping..."
+    log_warning "No themes found in $themes_source — skipping."
     return 0
   fi
 
   mkdir -p "$themes_dest"
 
   if cp -r "$themes_source/"* "$themes_dest/"; then
-    log_success "Themes pre-installed successfully to $themes_dest"
+    log_success "Themes copied to $themes_dest"
   else
-    log_error "Error copying theme files."
+    log_error "Failed to copy theme files."
     return 1
   fi
   echo ""
 }
 
 function _size_terminal() {
-  log_info "# Sizing terminal 120x30"
+  local cols=150
+  local rows=30
+  log_info "Resizing terminal to ${cols}x${rows}..."
+
+  local terminal_uid
   terminal_uid=$(gsettings get org.gnome.Terminal.ProfilesList default | tr -d "'")
-  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-columns 150
-  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" default-size-rows 30
-  log_success "Terminal sized to 150x30"
+
+  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" \
+    default-size-columns "$cols"
+  gsettings set "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$terminal_uid/" \
+    default-size-rows "$rows"
+
+  log_success "Terminal resized to ${cols}x${rows}"
   echo ""
 }
 
 function _check_dns() {
-  log_info "# Update DNS & make it immutable..."
+  log_info "Checking DNS configuration..."
 
   local resolv_file="/etc/resolv.conf"
 
-  if ! grep -q "1.0.0.1" $resolv_file; then
-    if [[ ! -f "$resolv_file.bkp" ]]; then
-      sudo cp "$resolv_file" "$resolv_file.bkp"
-      log_info "Backup created: $resolv_file.bkp"
-    fi
-
-    sudo chattr -i "$resolv_file" 2>/dev/null || true
-
-    sudo rm $resolv_file || true
-    sudo touch $resolv_file
-    echo "nameserver 1.0.0.1" | sudo tee -a $resolv_file > /dev/null
-    echo "nameserver 1.1.1.1" | sudo tee -a $resolv_file > /dev/null
-    echo "nameserver 8.8.8.8" | sudo tee -a $resolv_file > /dev/null
-    sudo chattr +i $resolv_file
-    log_success "DNS updated successfully (file is now immutable)"
-  else
-    echo "> DNS already up-to-date."
+  if grep -q "1.0.0.1" "$resolv_file"; then
+    log_success "DNS already up-to-date — skipping."
+    cat "$resolv_file"
+    echo ""
+    return 0
   fi
 
+  if [[ ! -f "$resolv_file.bkp" ]]; then
+    sudo cp "$resolv_file" "$resolv_file.bkp"
+    log_info "Backup created: $resolv_file.bkp"
+  fi
+
+  sudo chattr -i "$resolv_file" 2>/dev/null || true
+  sudo rm -f "$resolv_file"
+  sudo touch "$resolv_file"
+
+  printf "nameserver 1.0.0.1\nnameserver 1.1.1.1\nnameserver 8.8.8.8\n" \
+    | sudo tee "$resolv_file" > /dev/null
+
+  sudo chattr +i "$resolv_file"
+  log_success "DNS updated and file locked (immutable)."
   cat "$resolv_file"
   echo ""
 }
 
 function _update_network_driver() {
-  if ! command -v ip 2>/dev/null; then
-    sudo apt update
-    sudo apt install -y iproute2
+  log_info "Checking ethernet speed..."
+
+  if ! command -v ip &>/dev/null; then
+    sudo apt-get update -qq && sudo apt-get install -y iproute2
   fi
+
+  local iface
   iface=$(ip -br link | awk '$1 ~ /^enp|^eth/ {print $1; exit}')
 
-  if [ -z "$iface" ]; then
-      echo "❌ No ethernet connection detected (enp* or eth*)"
-      echo "Won't fix ethernet without stable connection"
-      return 0
+  if [[ -z "$iface" ]]; then
+    log_warning "No ethernet interface detected (enp*/eth*) — skipping network driver update."
+    return 0
   fi
 
-  echo "Interface found : $iface"
+  log_info "Interface found: $iface"
 
-  # --- Vérification de la vitesse actuelle ---
-  speed=$(sudo ethtool "$iface" 2>/dev/null | grep "Speed:" | awk '{print $2}')
-
-  if [ -z "$speed" ]; then
-      echo "❌ Speed of $iface unknow... skipping"
-      exit 1
+  if ! command -v ethtool &>/dev/null; then
+    log_warning "ethtool not found — installing..."
+    sudo apt-get install -y ethtool
   fi
 
-  echo "⚙️  Speed : $speed"
+  local speed
+  speed=$(sudo ethtool "$iface" 2>/dev/null | awk '/Speed:/{print $2}')
 
-  # --- Si la vitesse n'est pas 2500Mb/s, on force la bonne config ---
-  if [ "$speed" != "2500Mb/s" ]; then
-      echo "🚀 Changing speed from $speed to 2500Mb/s..."
-      sudo ethtool -s "$iface" speed 2500 duplex full autoneg on
-      sleep 1
-      new_speed=$(sudo ethtool "$iface" | grep "Speed:" | awk '{print $2}')
-      echo "✅ New max_speed : $new_speed"
+  if [[ -z "$speed" ]]; then
+    log_warning "Could not read speed for $iface — skipping."
+    return 0
+  fi
+
+  log_info "Current speed: $speed"
+
+  if [[ "$speed" != "2500Mb/s" ]]; then
+    log_info "Forcing speed from $speed → 2500Mb/s..."
+    sudo ethtool -s "$iface" speed 2500 duplex full autoneg on
+    sleep 1
+    local new_speed
+    new_speed=$(sudo ethtool "$iface" | awk '/Speed:/{print $2}')
+    log_success "New speed: $new_speed"
   else
-      echo "✅ Already at 2500Mb/s — Nothing to do"
+    log_success "Already at 2500Mb/s — nothing to do."
   fi
+
   sudo systemctl restart NetworkManager
   sleep 5
-  echo "---- Network updated"
 
+  log_info "Installing persistent speed-enforcement service..."
 
-  echo "Creating robust systemd service..."
-
-# --- Robust script ---
   sudo tee /usr/local/bin/force-ethernet-speed.sh > /dev/null <<'EOF'
 #!/usr/bin/env bash
 # Force Ethernet interface to 2500Mb/s (2.5 Gbps) reliably at boot
 
-# Wait up to 20 seconds for an UP ethernet interface (enp* or eth*)
 for i in $(seq 1 40); do
     iface=$(ip -br link show up 2>/dev/null | awk '$1 ~ /^enp|^eth/ && /UP/ {print $1; exit}')
     [ -n "$iface" ] && break
@@ -252,7 +265,7 @@ if [ -z "$iface" ]; then
     exit 0
 fi
 
-current_speed=$(ethtool "$iface" 2>/dev/null | grep -i "Speed:" | awk '{print $2}')
+current_speed=$(ethtool "$iface" 2>/dev/null | awk '/Speed:/{print $2}')
 
 if [ "$current_speed" = "2500Mb/s" ]; then
     echo "Interface $iface already at 2500Mb/s"
@@ -262,7 +275,6 @@ fi
 echo "Interface $iface currently at $current_speed → forcing 2500Mb/s"
 ethtool -s "$iface" speed 2500 duplex full autoneg on
 
-# Gentle restart of only the affected connection (no full NetworkManager restart)
 sleep 2
 conn_name=$(nmcli -t -f NAME,DEVICE connection show --active | awk -F: -v dev="$iface" '$2==dev {print $1}')
 if [ -n "$conn_name" ]; then
@@ -275,7 +287,6 @@ EOF
 
   sudo chmod +x /usr/local/bin/force-ethernet-speed.sh
 
-# --- Robust systemd service ---
   sudo tee /etc/systemd/system/force-ethernet-speed.service > /dev/null <<'EOF'
 [Unit]
 Description=Force Ethernet interface to 2.5 Gbps at boot
@@ -295,12 +306,12 @@ TimeoutSec=60
 WantedBy=multi-user.target
 EOF
 
-  # Enable and start
   sudo systemctl daemon-reload
   sudo systemctl enable --now force-ethernet-speed.service
 
-  echo "---- Network speed enforcement service installed and running"
+  log_success "Speed enforcement service installed and running."
   systemctl status force-ethernet-speed.service --no-pager -l
+  echo ""
 }
 
 function _bashrc_update() {
@@ -311,65 +322,67 @@ function _bashrc_update() {
     log_info "Backup created: $bashrc.bkp"
   fi
 
-  log_info "# Adding commands to ~/.bashrc ..."
+  log_info "Updating ~/.bashrc aliases..."
 
-  if ! grep -q "alias steam_games=" ~/.bashrc; then
-    echo "alias steam_games='xdg-open \"$HOME/.steam/debian-installation/steamapps/\"'" >> ~/.bashrc
-    log_success "steam_games - added"
-    echo "              >   used to open non-Steam added games folders"
-  else
-    echo "      ** steam_games - already in use"
-    echo "              >   used to open non-Steam added games folders"
-  fi
+  # Helper: add alias only if absent
+  _add_alias() {
+    local guard="$1"
+    local line="$2"
+    local label="$3"
+    local desc="$4"
+    if ! grep -qF "$guard" "$bashrc"; then
+      echo "$line" >> "$bashrc"
+      log_success "$label — added  ($desc)"
+    else
+      log_info "$label — already present  ($desc)"
+    fi
+  }
 
-  if ! grep -q "alias maj=" ~/.bashrc; then
-    echo "alias maj='sudo apt update && sudo apt upgrade -y'" >> ~/.bashrc
-    echo "alias update='sudo apt update && sudo apt upgrade -y'" >> ~/.bashrc
-    log_success "maj/update  - added"
-    echo "              >   used to update linux"
-  else
-    echo "      ** maj/update  - already in use"
-    echo "              >   used to update linux"
-  fi
+  _add_alias 'alias steam_games=' \
+    "alias steam_games='xdg-open \"\$HOME/.steam/debian-installation/steamapps/\"'" \
+    "steam_games" "open non-Steam game folders"
 
-  if ! grep -q "alias python=" ~/.bashrc; then
-    echo "alias python=python3" >> ~/.bashrc
-    log_success "python     - added"
-  else
-    echo "      ** python      - already in use"
-  fi
+  _add_alias 'alias maj=' \
+    $'alias maj=\'sudo apt update && sudo apt upgrade -y\'\nalias update=\'sudo apt update && sudo apt upgrade -y\'' \
+    "maj / update" "system update shortcut"
 
-  if ! grep -q 'alias k="kubectl"' ~/.bashrc; then
-    echo 'alias k="kubectl"' >> ~/.bashrc
-    log_success "kubectl - k added"
-  else
-    echo "      ** k           - Already in use"
-  fi
+  _add_alias 'alias python=' \
+    "alias python=python3" \
+    "python" "python → python3"
+
+  _add_alias 'alias k=' \
+    'alias k="kubectl"' \
+    "k" "kubectl shortcut"
 
   echo ""
 }
 
 function _setup_wallpapers() {
   local wallpaper_script="${SCRIPT_DIR}/z_wallpapers-changer.sh"
-  local screens="$1"
 
   if [[ ! -f "$wallpaper_script" ]]; then
-    log_error "Wallpaper script not found: $wallpaper_script"
-    return 1
+    log_warning "Wallpaper script not found: $wallpaper_script — skipping."
+    return 0
   fi
 
-  if ! command -v feh $> /dev/null; then
-    log_warning "feh is not installed... Installing..."
-    sudo apt install -y feh || {
-      log_error "Failed to install feh"
-      return 1
-    }
+  if ! command -v feh &>/dev/null; then
+    log_warning "feh not found — installing..."
+    sudo apt-get install -y feh || { log_error "Failed to install feh."; return 1; }
+  fi
+
+  local screens
+  read -rp "How many screens do you have? (default: 1) " screens
+  screens=${screens:-1}
+
+  if ! [[ "$screens" =~ ^[0-9]+$ ]] || [[ "$screens" -lt 1 ]]; then
+    log_warning "Invalid screen count '$screens' — defaulting to 1."
+    screens=1
   fi
 
   sed -i "s|^TOTAL_SCREENS=.*|TOTAL_SCREENS=\"$screens\"|" "$wallpaper_script"
   chmod +x "$wallpaper_script"
 
-  log_info "Creating wallpaper-changer systemd service..."
+  log_info "Creating wallpaper-changer systemd user service..."
 
   mkdir -p ~/.config/systemd/user
 
@@ -395,76 +408,89 @@ EOF
   systemctl --user enable wallpaper.service
   systemctl --user start wallpaper.service
 
-  log_success "Wallpaper service installed and started"
-  log_info "Check status with: systemctl --user status wallpaper.service"
+  log_success "Wallpaper service installed and started."
+  log_info "Check status: systemctl --user status wallpaper.service"
+  echo ""
 }
+
+# ==============================================================================
+# CLEANUP TRAP
+# ==============================================================================
 
 cleanup() {
   local exit_code=$?
-  if [[ $exit_code -ne 0 ]]; then
-      log_error "Script finished with error. (code: $exit_code)"
+  # Stop the sudo keepalive background process
+  if [[ -n "${SUDO_KEEPALIVE_PID:-}" ]]; then
+    kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
   fi
-  # ADD HERE functions to cleanup if script fails
+  if [[ $exit_code -ne 0 ]]; then
+    log_error "Script exited with error (code: $exit_code)."
+  fi
   print_separator
 }
 trap cleanup EXIT
 
+# ==============================================================================
+# MAIN
+# ==============================================================================
 
-###################
-#   MAIN SCRIPT   #
-###################
 print_separator
-log_info "Starting script: $SCRIPT_NAME"
-log_info "Script directory: $SCRIPT_DIR"
-[[ $DEBUG == true ]] && { set -x; log_warning "DEBUG activated"; }
+log_info "Starting: $SCRIPT_NAME"
+log_info "Directory: $SCRIPT_DIR"
+[[ "$DEBUG" == "true" ]] && { set -x; log_warning "DEBUG mode activated"; }
 print_separator
+echo ""
 
-cd "$SCRIPT_DIR"
-log_info "Workplace : $(pwd)"
+log_info "Workplace: $(pwd)"
 echo ""
 
 if [[ "$SAVE" == "true" ]]; then
-  # TODO add script
-  echo "Backup script"
+  # TODO: add backup script
+  log_warning "Backup script not yet implemented."
+  exit 0
 elif [[ "$CLEAN" == "true" ]]; then
-  # TODO add script
-  echo "Clean script"
-else
-  echo ""
+  # TODO: add cleanup script
+  log_warning "Clean script not yet implemented."
+  exit 0
+fi
 
-  _bashrc_update
-  _check_dns
-  _update_network_driver
-  _size_terminal
-  _install_themes
+# --- System configuration ---
+_bashrc_update
+_check_dns
+_update_network_driver
+_size_terminal
+_install_themes
+_setup_wallpapers
 
-  log_warning "# Preparing installation for scripts :"
-  readarray -t scripts < <(find "$RESOURCES_DIR" -name "*.sh" -type f ! -name "*_dsbl.sh" | sort)
+# --- Sub-scripts installation ---
+log_warning "Preparing resource scripts..."
+readarray -t scripts < <(find "$RESOURCES_DIR" -maxdepth 1 -name "*.sh" -type f ! -name "*_dsbl.sh" | sort)
 
-  if [ ${#scripts[@]} -eq 0 ]; then
-    log_error "No script found into $RESOURCES_DIR"
-    exit 1
-  else
-    for i in "${!scripts[@]}"; do
-      script_name=$(basename "${scripts[i]}")
-      echo "       >> $script_name"
-    done
-    echo ""
-  fi
-
-  read -p "Do you want to proceed with global installation ? (y/n) " answer
-  if [[ ! "$answer" =~ ^[yY]$ ]]; then
-    echo "Exiting. > You can also launch scripts manually from $RESOURCES_DIR"
-    exit 0
-  else
-    _install_scripts
-  fi
+if [[ ${#scripts[@]} -eq 0 ]]; then
+  log_error "No scripts found in $RESOURCES_DIR"
+  exit 1
 fi
 
 echo ""
-log_warning "RECOMMENDED ACTIONS :"
-echo "       >> INSTALL GRAPHIC DRIVER using ControlCenter"
-echo "       ** Reboot your computer  //  or run 'source ~/.bashrc' to apply changes"
-echo "       ** Configure keyboard shortcut"
-echo "       ** Customize your panel & widgets"
+log_info "Scripts to run:"
+for s in "${scripts[@]}"; do
+  echo "       >> $(basename "$s")"
+done
+echo ""
+
+read -rp "Proceed with full installation? (y/n) " answer
+if [[ ! "$answer" =~ ^[yY]$ ]]; then
+  log_warning "Cancelled. You can run scripts manually from: $RESOURCES_DIR"
+  exit 0
+fi
+
+_install_scripts
+
+# --- Post-install reminders ---
+echo ""
+log_warning "RECOMMENDED ACTIONS:"
+echo "       >> Install GPU driver via Control Center"
+echo "       >> Reboot  —  or run: source ~/.bashrc"
+echo "       >> Configure keyboard shortcuts"
+echo "       >> Customise your panel & widgets"
 print_separator
