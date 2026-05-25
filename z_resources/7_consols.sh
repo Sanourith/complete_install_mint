@@ -97,3 +97,57 @@ log_success "Kega Fusion ready!"
 log_info  "  >> Find it in your app menu under 'Kega Fusion'"
 log_info  "  >> Or launch manually: flatpak run $APP_ID"
 print_separator
+
+echo "Verifying YGO-Omega shortcut..."
+SOURCE_DIR="/media/psowl/SSD4OWL/8_Games/YGO-Omega"
+GAME_DIR="$HOME/Documents/games/YGO-Omega"
+
+EXECUTABLE="$GAME_DIR/YGO Omega.x86_64"
+DESKTOP_FILE="$HOME/.local/share/applications/ygo-omega.desktop"
+
+# Vérifie si le jeu est déjà présent
+if [ ! -f "$EXECUTABLE" ]; then
+    echo "📦 YGO Omega non trouvé dans :"
+    echo "   $GAME_DIR"
+    echo
+    echo "➡️ Copie des fichiers depuis :"
+    echo "   $SOURCE_DIR"
+
+    mkdir -p "$GAME_DIR"
+
+    cp -r "$SOURCE_DIR"/* "$GAME_DIR"/
+
+    echo "✅ Copie terminée."
+fi
+
+# Vérifie que l'exécutable existe après copie
+if [ ! -f "$EXECUTABLE" ]; then
+    echo "❌ Impossible de trouver l'exécutable :"
+    echo "   $EXECUTABLE"
+    exit 1
+fi
+
+# Création du dossier des lanceurs
+mkdir -p "$HOME/.local/share/applications"
+
+# Création du raccourci .desktop
+cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=YGO Omega
+Comment=Yu-Gi-Oh Omega
+Exec=$EXECUTABLE
+Path=$GAME_DIR
+Icon=$GAME_DIR/YGO Omega_Data/Resources/UnityPlayer.png
+Terminal=false
+Categories=Game;
+StartupNotify=true
+EOF
+
+chmod +x "$DESKTOP_FILE"
+
+update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+
+echo
+echo "🎮 YGO Omega is ready."
