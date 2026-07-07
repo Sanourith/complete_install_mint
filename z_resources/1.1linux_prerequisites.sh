@@ -92,7 +92,7 @@ function _update_system() {
     return 1
   fi
 
-  local packages=(vim curl htop tree build-essential git wget python3-pip feh)
+  local packages=(vim curl htop tree build-essential git wget python3-pip feh unrar)
   local to_install=()
 
   for package in "${packages[@]}"; do
