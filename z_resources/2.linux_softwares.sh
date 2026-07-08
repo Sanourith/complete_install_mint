@@ -118,6 +118,99 @@ function _install_brave() {
   log_success "Brave Browser installed"
 }
 
+function _install_tor() {
+  log_info "# Installing Tor browser..."
+  local LANG_CODE="en-US"
+  local INSTALL_DIR="${HOME}/.local/opt/tor-browser"
+  local BIN_LINK="${HOME}/.local/bin/tor-browser"
+  local DESKTOP_FILE="${HOME}/.local/share/applications/tor-browser.desktop"
+  local TMP_DIR
+  TMP_DIR="$(mktemp -d)"
+  trap 'rm -rf "${TMP_DIR}"' RETURN
+
+  for cmd in curl gpg tar; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      log_info "Installing missing dependency $cmd..."
+      sudo apt install $cmd
+    fi
+  done
+
+  local page
+  local DOWNLOAD_URL
+  page="$(curl -fsSL https://www.torproject.org/download/)"
+  DOWNLOAD_URL="$(grep -oE 'href="/dist/torbrowser/[0-9.]+/tor-browser-linux-x86_64-[0-9.]+\.tar\.xz"' <<< "$page" \
+    | head -n1 \
+    | sed -E 's/href="(.*)"/\1/')"
+  DOWNLOAD_URL="https://www.torproject.org${DOWNLOAD_URL}"
+
+  if [[ -z "$DOWNLOAD_URL" ]]; then
+    log_error "ERROR: could not find Linux download link on the page."
+    return 1
+  fi
+
+  local SIG_URL="${DOWNLOAD_URL}.asc"
+  local FILE_BASENAME
+  FILE_BASENAME="$(basename "$DOWNLOAD_URL")"
+  local LATEST_VERSION
+  LATEST_VERSION="$(grep -oE '[0-9]+\.[0-9]+\.[0-9]+' <<< "$FILE_BASENAME" | head -n1)"
+
+  log_info "Latest version found: ${LATEST_VERSION}"
+
+  # If already installed :
+  local VERSION_MARKER="${INSTALL_DIR}/.installed_version"
+  if [[ -f "${VERSION_MARKER}" ]] && [[ "$(cat "${VERSION_MARKER}")" == "${LATEST_VERSION}" ]]; then
+    log_info "Tor Browser ${LATEST_VERSION} already installed. Nothing to do."
+    return 0
+  fi
+
+  log_info "Downloading ${FILE_BASENAME}..."
+  curl -fL --progress-bar -o "${TMP_DIR}/${FILE_BASENAME}" "${DOWNLOAD_URL}"
+  curl -fsSL -o "${TMP_DIR}/${FILE_BASENAME}.asc" "${SIG_URL}"
+
+  # --- GPG key ---
+  local GNUPGHOME="${TMP_DIR}/gnupg"
+  mkdir -m 700 -p "${GNUPGHOME}"
+  export GNUPGHOME
+  log_info "Importing Tor Browser signing key..."
+  if ! curl -fsSL "https://openpgpkey.torproject.org/.well-known/openpgpkey/torproject.org/hu/kounek7zrdx745qydx6p59t9mqjpuhdf" \
+       | gpg --import 2>&1; then
+    log_info "WKD fetch failed, falling back to keyserver..."
+    gpg --keyserver keys.openpgp.org --recv-keys EF6E286DDA85EA2A4BA7DE684E2C6E8793298290
+  fi
+
+  log_info "Verifying GPG signature..."
+  if ! gpg --status-fd 1 --verify "${TMP_DIR}/${FILE_BASENAME}.asc" "${TMP_DIR}/${FILE_BASENAME}" 2>/dev/null \
+       | grep -q "^\[GNUPG:\] GOODSIG"; then
+    log_info "ERROR: signature verification FAILED. Aborting install."
+    return 1
+  fi
+
+  # Installing
+  log_info "Extracting to ${INSTALL_DIR}..."
+  mkdir -p "$(dirname "${INSTALL_DIR}")"
+  rm -rf "${INSTALL_DIR}"
+  mkdir -p "${INSTALL_DIR}"
+  tar -xJf "${TMP_DIR}/${FILE_BASENAME}" -C "${TMP_DIR}"
+  mv "${TMP_DIR}/tor-browser"/* "${INSTALL_DIR}/"
+  echo "${LATEST_VERSION}" > "${VERSION_MARKER}"
+  mkdir -p "$(dirname "${BIN_LINK}")"
+  ln -sf "${INSTALL_DIR}/Browser/start-tor-browser" "${BIN_LINK}"
+  chmod +x "${INSTALL_DIR}/Browser/start-tor-browser"
+
+  mkdir -p "$(dirname "${DESKTOP_FILE}")"
+  cat > "${DESKTOP_FILE}" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Tor Browser
+Exec=${INSTALL_DIR}/Browser/start-tor-browser %u
+Icon=${INSTALL_DIR}/Browser/browser/chrome/icons/default/default128.png
+Categories=Network;WebBrowser;
+Terminal=false
+EOF
+
+  log_success "Tor Browser ${LATEST_VERSION} installed successfully."
+}
+
 function _install_steam() {
   log_info "# Installing STEAM..."
 
@@ -198,8 +291,9 @@ print_separator
 _install_vscode || log_warning "VS Code installation failed, continuing..."
 _install_steam || log_warning "Steam installation failed, continuing..."
 _install_brave || log_warning "Brave installation failed, continuing..."
+_install_tor || log_warning "Tor installation failed, continuing..."
 _install_discord || log_warning "Discord installation failed, continuing..."
 _install_vlc || log_warning "VLC installation failed, continuing..."
 
 print_separator
-log_success "Software installation completed"
+log_success "Software installation finished."
