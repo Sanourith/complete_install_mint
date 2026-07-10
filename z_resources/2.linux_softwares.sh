@@ -300,6 +300,7 @@ print_separator
 _install_vscode || log_warning "VS Code installation failed, continuing..."
 _install_steam || log_warning "Steam installation failed, continuing..."
 _install_brave || log_warning "Brave installation failed, continuing..."
+_install_mullvad || log_warning "Mullvad installation failed, continuing..."
 _install_tor || log_warning "Tor installation failed, continuing..."
 _install_discord || log_warning "Discord installation failed, continuing..."
 _install_vlc || log_warning "VLC installation failed, continuing..."
