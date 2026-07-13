@@ -220,6 +220,16 @@ function _install_mullvad() {
   sudo apt install mullvad-browser
 }
 
+function _install_signal() {
+  curl https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > signal-desktop-keyring.gpg;
+  cat signal-desktop-keyring.gpg | sudo tee /usr/share/keyrings/signal-desktop-keyring.gpg > /dev/null
+
+  curl -o signal-desktop.sources https://updates.signal.org/static/desktop/apt/signal-desktop.sources;
+  cat signal-desktop.sources | sudo tee /etc/apt/sources.list.d/signal-desktop.sources > /dev/null
+
+  sudo apt update && sudo apt install signal-desktop
+}
+
 function _install_steam() {
   log_info "# Installing STEAM..."
 
@@ -304,6 +314,7 @@ _install_mullvad || log_warning "Mullvad installation failed, continuing..."
 _install_tor || log_warning "Tor installation failed, continuing..."
 _install_discord || log_warning "Discord installation failed, continuing..."
 _install_vlc || log_warning "VLC installation failed, continuing..."
+_install_signal || log_warning "Signal installation failed, continuing..."
 
 print_separator
 log_success "Software installation finished."
