@@ -2,8 +2,11 @@
 
 set -e
 
-HORIZONTAL_DIR="/home/$USER/Pictures/AIwall"
-VERTICAL_DIR="/home/$USER/Pictures/hnta"
+HORIZONTAL_DIR="$HOME/Pictures/AIwall"
+[[ -d "$HORIZONTAL_DIR" ]] || HORIZONTAL_DIR="$HOME/Images/AIwall"
+
+VERTICAL_DIR="$HOME/Pictures/hnta"
+[[ -d "$VERTICAL_DIR" ]] || VERTICAL_DIR="$HOME/Images/hnta"
 
 TOTAL_SCREENS="1"
 
