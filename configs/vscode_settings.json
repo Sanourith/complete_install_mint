@@ -1,6 +1,6 @@
 {
-    // === APPARENCE & THÈME ===
-    "workbench.colorTheme": "GitHub Dark High Contrast",
+    // === APPARENCE & THÈME - NIVEAU DIEU ===
+    "workbench.colorTheme": "GitHub Dark Default",
     "workbench.iconTheme": "material-icon-theme",
     "workbench.productIconTheme": "fluent-icons",
     "window.titleBarStyle": "custom",
@@ -54,7 +54,7 @@
     "editor.linkedEditing": true,
     "editor.occurrencesHighlight": "multiFile",
 
-    // === ÉDITEUR - SUGGESTIONS ===
+    // === ÉDITEUR - SUGGESTIONS ULTRA ===
     "editor.suggest.preview": true,
     "editor.suggest.showIcons": true,
     "editor.suggest.filterGraceful": true,
@@ -71,8 +71,9 @@
     "editor.acceptSuggestionOnEnter": "smart",
     "editor.tabCompletion": "on",
     "editor.wordBasedSuggestions": "matchingDocuments",
+    "editor.wordBasedSuggestionsMode": "currentDocument",
 
-    // === WORKBENCH ===
+    // === WORKBENCH PREMIUM ===
     "workbench.tree.indent": 20,
     "workbench.tree.renderIndentGuides": "always",
     "workbench.activityBar.location": "top",
@@ -91,7 +92,7 @@
     "workbench.editor.limit.value": 10,
     "workbench.editor.limit.excludeDirty": true,
 
-    // === FICHIERS & SAUVEGARDE ===
+    // === FICHIERS & SAUVEGARDE INTELLIGENTE ===
     "files.autoSave": "onFocusChange",
     "files.autoSaveDelay": 500,
     "files.trimTrailingWhitespace": true,
@@ -99,10 +100,6 @@
     "files.insertFinalNewline": true,
     "files.hotExit": "onExitAndWindowClose",
     "files.defaultLanguage": "plaintext",
-    "files.associations": {
-        "*.env": "dotenv",
-        "*.env.*": "dotenv"
-    },
     "files.exclude": {
         "**/.git": true,
         "**/.svn": true,
@@ -120,7 +117,7 @@
         "**/.vscode": false
     },
 
-    // === TERMINAL ===
+    // === TERMINAL DE GUERRE ===
     "terminal.integrated.fontSize": 13,
     "terminal.integrated.fontFamily": "'JetBrains Mono', 'Fira Code', 'Cascadia Code PL', monospace",
     "terminal.integrated.cursorBlinking": true,
@@ -133,9 +130,8 @@
     "terminal.integrated.rightClickBehavior": "copyPaste",
     "terminal.integrated.enableMultiLinePasteWarning": false,
     "terminal.integrated.persistentSessionReviveProcess": "onExit",
-    "terminal.integrated.scrollback": 10000,
 
-    // === PYTHON ===
+    // === PYTHON MASTERCLASS ===
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,
@@ -147,20 +143,23 @@
         "editor.insertSpaces": true,
         "editor.rulers": [88, 120]
     },
-    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "strict",
     "python.analysis.autoSearchPaths": true,
     "python.analysis.completeFunctionParens": true,
-    "python.analysis.inlayHints.variableTypes": true,
-    "python.analysis.inlayHints.functionReturnTypes": true,
-    "python.terminal.activateEnvironment": true,
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.mypyEnabled": false,
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "flake8.args": [
         "--max-line-length=88",
-        "--ignore=E203,W503,E501"
+        "--ignore=E203,W503,E501",
+        "--extend-ignore=F401"
     ],
 
-    // === JAVASCRIPT/TYPESCRIPT ===
+    // === JAVASCRIPT/TYPESCRIPT PRO ===
     "[javascript]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
@@ -179,13 +178,11 @@
     },
     "[json]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
         "editor.tabSize": 2,
         "editor.wordWrap": "off"
     },
     "[jsonc]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
         "editor.tabSize": 2,
         "editor.wordWrap": "off"
     },
@@ -202,16 +199,7 @@
         "editor.formatOnSave": true
     },
 
-    // === SHELL (nouveau — pour tes scripts bash d'automatisation) ===
-    "[shellscript]": {
-        "editor.defaultFormatter": "foxundermoon.shell-format",
-        "editor.formatOnSave": true,
-        "editor.tabSize": 2
-    },
-    "shellcheck.enable": true,
-    "shellcheck.run": "onType",
-
-    // === CSV ===
+    // === CONFIGURATION SPÉCIFIQUE CSV ===
     "[csv]": {
         "editor.wordWrap": "off"
     },
@@ -219,7 +207,7 @@
         "editor.wordWrap": "off"
     },
 
-    // === GIT ===
+    // === GIT NINJA ===
     "git.enableSmartCommit": true,
     "git.confirmSync": false,
     "git.autofetch": true,
@@ -233,7 +221,7 @@
     "diffEditor.renderSideBySide": true,
     "diffEditor.wordWrap": "inherit",
 
-    // === PERFORMANCES ===
+    // === PERFORMANCES TURBO ===
     "files.watcherExclude": {
         "**/.git/objects/**": true,
         "**/.git/subtree-cache/**": true,
@@ -300,7 +288,7 @@
         }
     },
 
-    // === INDENTATION RAINBOW ===
+    // === INDENTATION RAINBOW PREMIUM ===
     "indentRainbow.indicatorStyle": "light",
     "indentRainbow.lightIndicatorStyleLineWidth": 2,
     "indentRainbow.colors": [
@@ -314,7 +302,7 @@
     "indentRainbow.errorColor": "rgba(255,64,64,0.3)",
     "indentRainbow.tabmixColor": "rgba(255,196,64,0.4)",
 
-    // === COULEURS CUSTOM ===
+    // === THÈME CUSTOM COLORS ===
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#61dafb",
         "terminalCursor.foreground": "#61dafb",
@@ -332,7 +320,7 @@
         "list.hoverBackground": "#264f7820"
     },
 
-    // === BREADCRUMBS ===
+    // === BREADCRUMBS ADVANCED ===
     "breadcrumbs.enabled": true,
     "breadcrumbs.showKeys": true,
     "breadcrumbs.showFiles": true,
@@ -350,14 +338,13 @@
     "debug.inlineValues": "on",
     "debug.showBreakpointsInOverviewRuler": true,
     "testing.openTesting": "neverOpen",
-    "testing.automaticallyOpenTestResults": "neverOpen",
 
     // === SECURITY & TRUST ===
     "security.workspace.trust.untrustedFiles": "prompt",
     "security.workspace.trust.banner": "always",
     "security.workspace.trust.startupPrompt": "once",
 
-    // === AUTRES ===
+    // === AUTRES OPTIMISATIONS AVANCÉES ===
     "editor.renderWhitespace": "boundary",
     "editor.renderControlCharacters": false,
     "editor.codeLens": true,
@@ -371,17 +358,21 @@
     "outline.problems.colors": true,
     "outline.problems.badges": true,
 
+    // === PERFORMANCE BOOSTS ===
     "extensions.ignoreRecommendations": false,
     "telemetry.telemetryLevel": "off",
     "update.mode": "manual",
     "workbench.settings.enableNaturalLanguageSearch": false,
     "npm.fetchOnlinePackageInfo": false,
 
+    // === ZOOM & ACCESSIBILITÉ PRO ===
+    "window.zoomLevel": 0,
     "editor.accessibilitySupport": "auto",
     "workbench.reduceMotion": "off",
     "editor.multiCursorModifier": "ctrlCmd",
     "editor.snippetSuggestions": "top",
 
+    // === PREVIEW & MARKDOWN ===
     "[markdown]": {
         "editor.wordWrap": "on",
         "editor.quickSuggestions": {
@@ -393,6 +384,7 @@
     "markdown.preview.fontSize": 14,
     "markdown.preview.fontFamily": "system-ui, -apple-system, sans-serif",
     "workbench.editor.tabActionLocation": "right",
+    "testing.automaticallyOpenTestResults": "neverOpen",
     "explorer.confirmDragAndDrop": false,
     "explorer.confirmDelete": false
 }
