@@ -119,11 +119,7 @@ function _install_brave() {
 }
 
 function _install_mega() {
-    local deb="megasync-xUbuntu_24.04_amd64.deb"
-
-    wget -O "$deb" "https://mega.nz/linux/repo/xUbuntu_24.04/amd64/$deb" &&
-    sudo apt install -y "./$deb"
-}
+  wget https://mega.nz/linux/repo/xUbuntu_24.04/amd64/megasync-xUbuntu_24.04_amd64.deb && sudo apt install "$PWD/megasync-xUbuntu_24.04_amd64.deb"
 }
 
 function _install_tor() {
@@ -220,22 +216,33 @@ EOF
 }
 
 function _install_mullvad() {
+  log_info "# Installing Mullvad Browser..."
+  if command -v mullvad-browser &>/dev/null; then
+    echo "       Mullvad Browser already installed"
+    return 0
+  fi
   sudo curl -fsSLo /usr/share/keyrings/mullvad-keyring.asc https://repository.mullvad.net/deb/mullvad-keyring.asc
-
-  echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.asc arch=$( dpkg --print-architecture )] https://repository.mullvad.net/deb/stable stable main" | sudo tee /etc/apt/sources.list.d/mullvad.list
-
+  echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.asc arch=$(dpkg --print-architecture)] https://repository.mullvad.net/deb/stable stable main" \
+    | sudo tee /etc/apt/sources.list.d/mullvad.list > /dev/null
   sudo apt update
-  sudo apt install mullvad-browser
+  sudo apt install -y mullvad-browser
 }
 
 function _install_signal() {
-  curl https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > signal-desktop-keyring.gpg;
-  cat signal-desktop-keyring.gpg | sudo tee /usr/share/keyrings/signal-desktop-keyring.gpg > /dev/null
+  log_info "# Installing Signal..."
+  if command -v signal-desktop &>/dev/null; then
+    echo "       Signal already installed"
+    return 0
+  fi
+  local tmp; tmp=$(mktemp -d)
+  curl -fsSL https://updates.signal.org/desktop/apt/keys.asc | gpg --dearmor > "$tmp/signal-desktop-keyring.gpg"
+  sudo tee /usr/share/keyrings/signal-desktop-keyring.gpg < "$tmp/signal-desktop-keyring.gpg" > /dev/null
 
-  curl -o signal-desktop.sources https://updates.signal.org/static/desktop/apt/signal-desktop.sources;
-  cat signal-desktop.sources | sudo tee /etc/apt/sources.list.d/signal-desktop.sources > /dev/null
+  curl -fsSL -o "$tmp/signal-desktop.sources" https://updates.signal.org/static/desktop/apt/signal-desktop.sources
+  sudo tee /etc/apt/sources.list.d/signal-desktop.sources < "$tmp/signal-desktop.sources" > /dev/null
 
-  sudo apt update && sudo apt install signal-desktop
+  sudo apt update && sudo apt install -y signal-desktop
+  rm -rf "$tmp"
 }
 
 function _install_steam() {
@@ -257,10 +264,6 @@ function _install_steam() {
   log_info "Installing Steam (this may take a while)..."
   sudo apt install -y steam
   log_success "Steam installed"
-}
-
-function _isntall_mega() {
-  wget https://mega.nz/linux/repo/xUbuntu_24.04/amd64/megasync-xUbuntu_24.04_amd64.deb && sudo apt install "$PWD/megasync-xUbuntu_24.04_amd64.deb"
 }
 
 function _install_vscode() {
