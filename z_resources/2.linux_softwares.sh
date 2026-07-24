@@ -118,6 +118,14 @@ function _install_brave() {
   log_success "Brave Browser installed"
 }
 
+function _install_mega() {
+    local deb="megasync-xUbuntu_24.04_amd64.deb"
+
+    wget -O "$deb" "https://mega.nz/linux/repo/xUbuntu_24.04/amd64/$deb" &&
+    sudo apt install -y "./$deb"
+}
+}
+
 function _install_tor() {
   log_info "# Installing Tor browser..."
   local LANG_CODE="en-US"
@@ -251,6 +259,10 @@ function _install_steam() {
   log_success "Steam installed"
 }
 
+function _isntall_mega() {
+  wget https://mega.nz/linux/repo/xUbuntu_24.04/amd64/megasync-xUbuntu_24.04_amd64.deb && sudo apt install "$PWD/megasync-xUbuntu_24.04_amd64.deb"
+}
+
 function _install_vscode() {
   log_info "# Installing VSCODE..."
 
@@ -315,6 +327,7 @@ _install_tor || log_warning "Tor installation failed, continuing..."
 _install_discord || log_warning "Discord installation failed, continuing..."
 _install_vlc || log_warning "VLC installation failed, continuing..."
 _install_signal || log_warning "Signal installation failed, continuing..."
+_install_mega || log_warning "MEGA installation failed, continuing..."
 
 print_separator
 log_success "Software installation finished."
