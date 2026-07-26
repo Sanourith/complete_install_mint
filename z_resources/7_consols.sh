@@ -92,6 +92,11 @@ log_success "Desktop shortcut created: $DESKTOP_FILE"
 
 # --- Done ---
 echo ""
+
+echo "Installing PokéMMO with flatpak..."
+flatpak install com.pokemmo.PokeMMO
+echo "Done..."
+
 print_separator
 log_success "Kega Fusion ready!"
 log_info  "  >> Find it in your app menu under 'Kega Fusion'"
