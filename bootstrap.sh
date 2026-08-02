@@ -47,16 +47,30 @@ if command -v ansible-playbook &> /dev/null; then
   log_info "Ansible is already installed: ${INSTALLED_VERSION}"
 else
   log_info "Installing Ansible..."
-  sudo apt-get install -y ansible
+  sudo apt-get install -y ansible ansible-lint
+  # sudo apt install -y ansible-lint
   log_info "Ansible installé : $(ansible --version | head -n1)"
 fi
 
 # LAUNCHING PLAYBOOK
 cd "${ANSIBLE_DIR}"
 
+if command -v ansible-lint &> /dev/null; then
+    log_info "Linting playbook before run... (informative, not blocking)..."
+    ansible-lint --profile min || log_warn "ansible-lint shows some potential errors. Please check before run again."
+fi
+
+if [[ -f "requirements.yml" ]]; then
+    log_info "Installation Ansible collections (requirements.yml)..."
+    ansible-galaxy collection install -r requirements.yml
+else
+    log_warn "No requirements.yml found — Skipping."
+fi
+
+echo "You must enter your ROOT password..."
 ansible-playbook \
   -i "${INVENTORY}" \
   "${PLAYBOOK}" \
-  --ask-become-pass
+  -K
 
 log_info "Finished."

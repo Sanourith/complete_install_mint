@@ -1,0 +1,4 @@
+- name: Deploy VSCode JSON config_file
+  copy:
+    src: vscode_settings.json
+    dest: "{{ ansible_env.HOME }}/.config/Code/User/settings.json"

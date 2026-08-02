@@ -1,0 +1,16 @@
+[Unit]
+Description=Force Ethernet interface to {{ network_target_speed / 1000 }} Gbps at boot
+After=network.target NetworkManager-wait-online.service
+Wants=network.target NetworkManager-wait-online.service
+Requires=NetworkManager-wait-online.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/force-ethernet-speed.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutSec=60
+
+[Install]
+WantedBy=multi-user.target

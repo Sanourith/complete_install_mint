@@ -1,0 +1,14 @@
+- import_tasks: system.yml
+  tags: [prerequisites, system]
+
+- import_tasks: shell_env.yml
+  tags: [prerequisites, shell]
+
+- import_tasks: network.yml
+  tags: [prerequisites, network]
+
+- import_tasks: packages.yml
+  tags: [prerequisites, packages]
+
+- import_tasks: desktop.yml
+  tags: [prerequisites, desktop]

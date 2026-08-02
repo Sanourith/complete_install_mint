@@ -1,0 +1,33 @@
+#! /bin/bash
+# Force Ethernet interface to {{ network_target_speed }}Mb/s reliably at boot
+# Managed by Ansible
+
+for i in $(seq 1 40); do
+    iface=$(ip -br link show up 2>/dev/null | awk '$1 ~ /^enp|^eth/ && /UP/ {print $1; exit}')
+    [ -n "$iface" ] && break
+    sleep 0.5
+done
+
+if [ -z "$iface" ]; then
+    echo "No UP ethernet interface detected (enp*/eth*) – skipping" >&2
+    exit 0
+fi
+
+current_speed=$(ethtool "$iface" 2>/dev/null | awk '/Speed:/{print $2}')
+
+if [ "$current_speed" = "{{ network_target_speed }}Mb/s" ]; then
+    echo "Interface $iface already at {{ network_target_speed }}Mb/s"
+    exit 0
+fi
+
+echo "Interface $iface currently at $current_speed → forcing {{ network_target_speed }}Mb/s"
+ethtool -s "$iface" speed {{ network_target_speed }} duplex full autoneg on
+
+sleep 2
+conn_name=$(nmcli -t -f NAME,DEVICE connection show --active | awk -F: -v dev="$iface" '$2==dev {print $1}')
+if [ -n "$conn_name" ]; then
+    nmcli connection down "$conn_name" >/dev/null 2>&1
+    nmcli connection up   "$conn_name" >/dev/null 2>&1
+fi
+
+echo "Speed successfully forced to {{ network_target_speed }}Mb/s on $iface"

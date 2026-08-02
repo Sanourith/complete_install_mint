@@ -1,0 +1,26 @@
+bashrc_aliases:
+  - { guard: "alias steam_games=", line: "alias steam_games='xdg-open \"$HOME/.steam/debian-installation/steamapps/\"'" }
+  - { guard: "alias maj=", line: "alias maj='sudo apt update && sudo apt upgrade -y'" }
+  - { guard: "alias update=", line: "alias update='sudo apt update && sudo apt upgrade -y'" }
+  - { guard: "alias python=", line: "alias python=python3" }
+  - { guard: "alias k=", line: 'alias k="kubectl"' }
+
+network_target_speed: 2500
+
+terminal_cols: 150
+terminal_rows: 30
+
+base_packages:
+  - vim
+  - curl
+  - htop
+  - tree
+  - build-essential
+  - git
+  - wget
+  - python3-pip
+  - python3-venv
+  - feh
+  - unrar
+  - flatpak
+  - gnome-software-plugin-flatpak

@@ -1,0 +1,10 @@
+- hosts: all
+  become: true
+  roles:
+    - prerequisites
+    # - softwares
+    # - consols
+    # - vscode
+    # - webstorm
+
+# ansible-playbook -i inventories/local/hosts.yml playbooks/install.yml -K

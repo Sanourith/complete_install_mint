@@ -1,0 +1,19 @@
+# COPYING THEMES
+################################################################################
+- name: Verify theme into role/files
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.themes"
+    state: directory
+    mode: "0755"
+
+- name: Copying theme Mojave-Dark
+  ansible.builtin.copy:
+    src: Mojave-Dark
+    dest: "{{ ansible_env.HOME }}/.themes/"
+################################################################################
+
+# WALLPAPER-CHANGER
+################################################################################
+
+
+################################################################################

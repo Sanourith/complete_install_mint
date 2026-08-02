@@ -1,0 +1,70 @@
+# UPDATE DNS
+################################################################################
+- name: Verify DNS configuration...
+  ansible.builtin.slurp:
+    src: /etc/resolv.conf
+  register: resolv_conf_content
+  become: true
+
+- name: Define if DNS is already updated.
+  ansible.builtin.set_fact:
+    dns_already_ok: "{{ '1.0.0.1' in (resolv_conf_content.content | b64decode) }}"
+
+- name: Remove 'immutable' locker if present.
+  ansible.builtin.command: chattr -i /etc/resolv.conf
+  become: true
+  changed_when: false
+  failed_when: false
+  when: not dns_already_ok
+
+- name: Deploy new DNS configuration...
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 1.0.0.1
+      nameserver 1.1.1.1
+      nameserver 8.8.8.8
+    backup: true
+    force: true
+  become: true
+  when: not dns_already_ok
+
+- name: Set 'immutable' locker to new config file.
+  ansible.builtin.command: chattr +i /etc/resolv.conf
+  become: true
+  changed_when: false
+  when: not dns_already_ok
+
+- name: Display resolv.conf content...
+  ansible.builtin.debug:
+    var: resolv_conf_content.content
+  when: dns_already_ok
+
+################################################################################
+
+# BLACKLIST NOUVEAU (GRAPHIC DRIVER)
+################################################################################
+- name: Blacklist Nouveau driver...
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/blacklist-nouveau.conf
+    content: |
+      blacklist nouveau
+      options nouveau modset=0
+    mode: "0644"
+  become: true
+  register: nouveau_blacklist_result
+
+- name: Regenerate initramfs
+  ansible.builtin.command: update-initramfs -u
+  become: true
+  when: nouveau_blacklist_result.changed
+  changed_when: true
+
+- name: Confirm new driver has to be installed manually.
+  ansible.builtin.debug:
+    msg: >-
+      Nouveau driver is disabled after reset.
+      Think about installing your driver from the installation proposal !
+  when: nouveau_blacklist_result.changed
+
+################################################################################

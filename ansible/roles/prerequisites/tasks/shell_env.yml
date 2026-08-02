@@ -1,0 +1,66 @@
+# BASHRC CONFIGURATION
+################################################################################
+- name: Backup .bashrc before modify
+  ansible.builtin.copy:
+    src: "{{ ansible_env.HOME }}/.bashrc"
+    dest: "{{ ansible_env.HOME }}/.bashrc.bkp"
+    remote_src: true
+    force: false
+
+- name: Adding aliases to .bashrc file
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    regexp: "^{{ item.guard }}"
+    line: "{{ item.line }}"
+  loop: "{{ bashrc_aliases }}"
+  loop_control:
+    label: "{{ item.guard }}"
+################################################################################
+
+# SIZE TERMINAL
+################################################################################
+- name: Get UID from default terminal
+  ansible.builtin.command: gsettings get org.gnome.Terminal.ProfilesList default
+  register: terminal_uid_raw
+  changed_when: false
+
+- name: UID without quotes
+  ansible.builtin.set_fact:
+    terminal_uid: "{{ terminal_uid_raw.stdout | replace(\"'\", '') }}"
+
+- name: Get cols from terminal
+  ansible.builtin.command: >
+    gsettings get
+    org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{{ terminal_uid }}/
+    default-size-columns
+  register: current_cols
+  changed_when: false
+
+- name: Get rows from terminal
+  ansible.builtin.command: >
+    gsettings get
+    org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{{ terminal_uid }}/
+    default-size-rows
+  register: current_rows
+  changed_when: false
+
+- name: Define new terminal cols
+  ansible.builtin.command: >
+    gsettings set
+    org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{{ terminal_uid }}/
+    default-size-columns {{ terminal_cols }}
+  when: current_cols.stdout != (terminal_cols | string)
+
+- name: Define new terminal rows
+  ansible.builtin.command: >
+    gsettings set
+    org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:{{ terminal_uid }}/
+    default-size-rows {{ terminal_rows }}
+  when: current_rows.stdout != (terminal_rows | string)
+
+################################################################################
+
+# LAST TASK : REMINDER
+- name: Think about sourcing .bashrc
+  ansible.builtin.debug:
+    msg: "Personnalized commands will be available after typing: 'source ~/.bashrc')."

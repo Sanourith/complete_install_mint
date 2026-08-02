@@ -1,0 +1,29 @@
+# INSTALL PACKAGES
+################################################################################
+- name: Adding Flatpak repository
+  community.general.flatpak_remote:
+    name: flathub
+    state: present
+    flatpakrepo_url: https://flathub.org/repo/flathub.flatpakrepo
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  register: apt_update_result
+
+- name: Install packages...
+  ansible.builtin.apt:
+    name: "{{ base_packages }}"
+    state: present
+  become: true
+  register: apt_install_result
+
+- name: Upgrade packages...
+  ansible.builtin.apt:
+    upgrade: safe
+  become: true
+  register: apt_upgrade_result
+
+################################################################################
