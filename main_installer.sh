@@ -485,12 +485,3 @@ if [[ ! "$answer" =~ ^[yY]$ ]]; then
 fi
 
 _install_scripts
-
-# --- Post-install reminders ---
-echo ""
-log_warning "RECOMMENDED ACTIONS:"
-echo "       >> Install GPU driver via Control Center"
-echo "       >> Reboot  —  or run: source ~/.bashrc"
-echo "       >> Configure keyboard shortcuts"
-echo "       >> Customise your panel & widgets"
-print_separator

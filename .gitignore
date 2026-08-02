@@ -1,1 +1,55 @@
 *.AppImage
+icons/
+
+### === Ansible ===
+*.retry
+*.orig
+*.bak
+.vault_pass
+vault_pass.txt
+*vault-password*
+.ansible/
+/inventories/remote/hosts.yml
+/inventories/*/host_vars/*_secret*
+
+### === Secrets / credentials (avoid commit) ===
+*.pem
+*.key
+id_rsa
+id_ed25519
+.env
+.env.*
+*secrets*.yml
+!*secrets*.example.yml
+
+### === Bash / shell ===
+*.sh~
+*.log
+nohup.out
+
+### === IDE ===
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+### === Linux / OS ===
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+### === Python ===
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+### === Divers projet ===
+/data/raw/
+/data/processed/
+*.dump
+*.bak.tar.gz
