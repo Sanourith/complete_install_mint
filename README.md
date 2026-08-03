@@ -1,100 +1,105 @@
-# Linux Auto-Setup Installer
+# complete_install_mint
 
-This repository automates the installation and configuration of a complete, ready-to-use Linux environment.
-Everything is managed from a single entry point: `main_installer.sh`.
+Full configuration automation for a **Linux Mint** PC, built for fast reformatting: a single command after the OS install, and the machine gets its entire work environment back.
 
----
-
-## Purpose
-
-This project is designed to:
-- Prepare a clean and up-to-date Linux system.
-- Automatically install a set of common tools and services (Apps, DevOps & Data softwares, etc.).
-- Inject custom resources (themes, configurations, wallpapers, etc.).
-- Simplify reinstallations, migrations, or development environment setups.
+The project is currently being migrated from hand-written bash scripts to a structured **Ansible** setup — more robust, idempotent, and maintainable.
 
 ---
 
-## Project Structure
+## 🎯 Goal
 
-```
-.
-├── main_installer.sh          # Main entry point script
-├── z_resources/               # Miscellaneous resources (themes, configs, icons, etc.)
-│ ├── 1.script.sh              # Specific installation scripts (automatically executed)
-│ ├── 2.script.sh
-│ ├── ...
-│ ├── themes/*
-│ └── wallpapers/*
-└── README.md
-```
+After a fresh format, run **a single command** to:
+- configure the system (DNS, network driver, graphics driver, shell environment)
+- install the required software (dev, devops, data eng...)
+- restore personal configs (VSCode, themes, wallpapers)
+
+No manual clicking around, no "don't forget to install X" sticky notes.
 
 ---
 
-## Usage
+## 🚀 Quick start
 
-### 1. Clone the repository
 ```bash
-git clone https://github.com/Sanourith/complete_install_mint.git
+git clone <repo-url>
 cd complete_install_mint
+./bootstrap.sh
 ```
 
-### 2. Make the main script executable
-```bash
-chmod +x main_installer.sh
+`bootstrap.sh` handles everything else: installing Ansible, pulling the required collections, then running the main playbook.
+
+> **For now**, execution is **local only**. Remote execution (on another machine over the network) is planned for a later phase — the inventory layout (`local/` / `remote/`) was designed with that in mind from the start.
+
+---
+
+## 🏗️ Project structure
+
+```
+complete_install_mint/
+├── bootstrap.sh              # Single entry point — installs Ansible and runs the playbook
+├── ansible/                  # Ansible infrastructure (migration in progress)
+│   ├── ansible.cfg
+│   ├── requirements.yml      # Required external Ansible collections
+│   ├── inventories/
+│   │   ├── local/             # Runs against the current machine
+│   │   └── remote/            # (scaffolded for future remote use)
+│   ├── playbooks/
+│   │   └── install.yml        # Main playbook, orchestrates all roles
+│   └── roles/
+│       ├── prerequisites/     # Base system config (DNS, network, shell, drivers...)
+│       ├── softwares/         # Software installation, by category
+│       ├── consols/           # Terminal/console configuration
+│       └── vscode/            # VSCode configuration
+│
+├── z_resources/               # Legacy bash scripts — kept for reference during
+│                               # the migration, to be removed once every
+│                               # equivalent Ansible role is finalized
+└── configs/                   # Static config files (e.g. VSCode)
 ```
 
-### 3. Run the installer helper
-```bash
-./main_installer.sh --help
-```
+---
 
-# WIP
-How main_installer.sh Works
-The main script performs the following steps:
+## 📦 `prerequisites` role
 
-System update
+The first finished role. Prepares the system *before* installing any business software.
 
-Runs apt update && apt upgrade -y
+| Task file | Description |
+|---|---|
+| `system.yml` | System update, DNS configuration, network driver (ethernet speed), blacklisting the Nouveau driver (in favor of the proprietary Nvidia driver) |
+| `shell_env.yml` | Custom `.bashrc` aliases, default terminal resizing |
+| `packages.yml` | Base system packages, Flatpak + Flathub repo, Python environment (`venv`, `pip`) |
+| `desktop.yml` | GTK themes, automatic wallpaper-changer service |
+| `network.yml` | Network speed connection adapter
 
-Installs basic packages (curl, git, wget, build-essential, etc.)
+Every task is idempotent: rerunning the playbook only reapplies what actually changed.
 
-Automatically runs all scripts in install_scripts/
+---
 
-Scripts are executed in numeric order (1.*, 2.*, etc.)
+## 🔧 Requirements
 
-Each script must be idempotent (safe to re-run without side effects).
+- Linux Mint (or an apt-compatible Ubuntu/Debian derivative)
+- `sudo` access
+- Internet connection (package installs, Ansible collections, Flathub...)
 
-Copies resources from z_resources/
+Everything else (Ansible, collections, dependencies) is installed automatically by `bootstrap.sh`.
 
-GTK themes, icons, wallpapers, configuration files, etc.
+---
 
-Files are copied to the appropriate system or user directories.
+## 🗺️ Roadmap
 
-Example Script in install_scripts/
-```bash
-#!/usr/bin/env bash
-set -e
+- [x] Ansible structure (inventories, playbook, roles)
+- [x] `prerequisites` role
+- [ ] `softwares` role (dev, devops, data eng)
+- [ ] `consols` role
+- [ ] `vscode` role
+- [ ] `webstorm` role
+- [ ] Centralized logging
+- [ ] Remote execution support (`remote/` inventory)
+- [ ] Remove legacy bash scripts once functional parity is reached
 
-echo "=== Installing Docker ==="
+---
 
-if ! command -v docker &> /dev/null; then
-  sudo apt install -y ca-certificates curl gnupg
-  sudo install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-    https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  sudo apt update
-  sudo apt install -y docker-ce docker-ce-cli containerd.io
-else
-  echo "Docker already installed — skipping."
-fi
-```
+## 📝 Notes
 
-Best Practices
-All installation scripts should be idempotent (safe to re-run without changes).
-
-Prefix files in install_scripts with a number to define execution order.
-
-Use the z_resources folder for non-executable files (themes, configs, assets).
+- `ansible-lint` is available to check Ansible code quality (`ansible-lint --profile basic`), meant to be run manually during development.
+- Secrets and remote inventories are never committed (see `.gitignore`).
+- Legacy bash scripts remain in `z_resources/` as a reference until the migration is complete — they are no longer called by `bootstrap.sh`.
