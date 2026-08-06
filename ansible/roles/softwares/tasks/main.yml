@@ -1,0 +1,14 @@
+- import_tasks: simple_packages.yml
+  tags: [softwares, simple]
+
+- import_tasks: repo_packages.yml
+  tags: [softwares, repos]
+
+- import_tasks: discord.yml
+  tags: [softwares, discord]
+
+- import_tasks: mega.yml
+  tags: [softwares, mega]
+
+- import_tasks: tor.yml
+  tags: [softwares, tor]

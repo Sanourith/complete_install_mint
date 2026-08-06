@@ -1,0 +1,5 @@
+- name: Download & install repo-based softwares
+  ansible.builtin.include_tasks: repo_softwares_item.yml
+  loop: "{{ repo_software }}"
+  loop_control:
+    label: "{{ item.name }}"

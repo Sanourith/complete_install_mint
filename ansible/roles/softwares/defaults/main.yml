@@ -1,0 +1,43 @@
+simple_packages:
+  - vlc
+
+steam_package: steam
+
+repo_software:
+  - name: brave
+    package: brave-browser
+    key_url: https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+    key_dest: /usr/share/keyrings/brave-browser-archive-keyring.gpg
+    key_is_binary: true
+    repo_line: "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"
+    repo_dest: /etc/apt/sources.list.d/brave-browser-release.list
+
+  - name: vscode
+    package: code
+    key_url: https://packages.microsoft.com/keys/microsoft.asc
+    key_dest: /etc/apt/trusted.gpg.d/packages.microsoft.gpg
+    key_is_binary: false
+    repo_line: "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
+    repo_dest: /etc/apt/sources.list.d/vscode.list
+
+  - name: mullvad
+    package: mullvad-browser
+    key_url: https://repository.mullvad.net/deb/mullvad-keyring.asc
+    key_dest: /usr/share/keyrings/mullvad-keyring.asc
+    key_is_binary: false
+    repo_line: "deb [signed-by=/usr/share/keyrings/mullvad-keyring.asc arch={{ ansible_architecture | replace('x86_64','amd64') }}] https://repository.mullvad.net/deb/stable stable main"
+    repo_dest: /etc/apt/sources.list.d/mullvad.list
+
+  - name: signal
+    package: signal-desktop
+    key_url: https://updates.signal.org/desktop/apt/keys.asc
+    key_dest: /usr/share/keyrings/signal-desktop-keyring.gpg
+    key_is_binary: false
+    repo_line: null
+    repo_dest: /etc/apt/sources.list.d/signal-desktop.sources
+    repo_source_url: https://updates.signal.org/static/desktop/apt/signal-desktop.sources
+
+tor_install_dir: "{{ ansible_env.HOME }}/.local/opt/tor-browser"
+tor_bin_link: "{{ ansible_env.HOME }}/.local/bin/tor-browser"
+tor_desktop_file: "{{ ansible_env.HOME }}/.local/share/applications/tor-browser.desktop"
+tor_signing_key_fingerprint: "EF6E286DDA85EA2A4BA7DE684E2C6E8793298290"

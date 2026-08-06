@@ -6,8 +6,14 @@
     state: directory
     mode: "0755"
 
+- name: Check if Mojave-Dark theme already exists
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.themes/Mojave-Dark"
+  register: mojave_theme_check
+
 - name: Copying theme Mojave-Dark
   ansible.builtin.copy:
     src: Mojave-Dark
     dest: "{{ ansible_env.HOME }}/.themes/"
+  when: not mojave_theme_check.stat.exists
 ################################################################################

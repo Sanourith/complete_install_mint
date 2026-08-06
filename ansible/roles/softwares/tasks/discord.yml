@@ -1,0 +1,24 @@
+- name: Check if Discord is already installed
+  ansible.builtin.command: dpkg -s discord
+  register: discord_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Discord...
+  when: discord_check.rc != 0
+  become: true
+  block:
+    - name: Download Discord package...
+      ansible.builtin.get_url:
+        url: "https://discord.com/api/download?platform=linux&format=deb"
+        dest: /tmp/discord.deb
+        mode: "0644"
+
+    - name: Install Discord (w/ dependency)
+      ansible.builtin.apt:
+        deb: /tmp/discord.deb
+
+    - name: Clean Discord installation file
+      ansible.builtin.file:
+        path: /tmp/discord.deb
+        state: absent

@@ -1,0 +1,150 @@
+# - name: Ensure Tor dependencies are present...
+#   ansible.builtin.apt:
+#     name: [curl, gnupg, tar]
+#     state: present
+#   become: true
+
+# - name: Fetch the Tor Project download page
+#   ansible.builtin.shell: curl -fsSL https://www.torproject.org/download/
+#   register: tor_download_page_raw
+#   changed_when: false
+
+# - name: Extract the Linux download URL
+#   ansible.builtin.set_fact:
+#     tor_download_path: "{{ tor_download_page_raw.stdout | regex_search('href=\"(/dist/torbrowser/[0-9.]+/tor-browser-linux-x86_64-[0-9.]+\\.tar\\.xz)\"', '\\1') | first }}"
+
+# # - name: Fetch the Tor Project download page
+# #   ansible.builtin.uri:
+# #     url: https://www.torproject.org/download/
+# #     return_content: true
+# #     headers:
+# #       User-Agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# #   register: tor_download_page
+# #   retries: 3
+# #   delay: 5
+# #   until: tor_download_page.status == 200
+
+# # - name: Extract linux download URL
+# #   ansible.builtin.set_fact:
+# #     tor_download_path: "{{ tor_download_page.content | regex_search('href=\"(/dist/torbrowser/[0-9.]+/tor-browser-linux-x86_64-[0-9.]+\\.tar\\.xz)\"', '\\1') | first }}"
+
+# - name: Fail cleanly if no download link was found
+#   ansible.builtin.fail:
+#     msg: "Could not find the Linux download link on the Tor Project page."
+#   when: tor_download_path is not defined or tor_download_path == ""
+
+# - name: Compute Download URL, filename, version
+#   ansible.builtin.set_fact:
+#     tor_download_url: "https://www.torproject.org{{ tor_download_path }}"
+#     tor_file_basename: "{{ tor_download_path | basename }}"
+#     tor_latest_version: "{{ tor_download_path | regex_search('[0-9]+\\.[0-9]+\\.[0-9]+') }}"
+
+# - name: Check currently installed version
+#   ansible.builtin.slurp:
+#     src: "{{ tor_install_dir }}/.installed_version"
+#   register: tor_installed_version_raw
+#   failed_when: false
+
+# - name: Determine if an update is needed
+#   ansible.builtin.set_fact:
+#     tor_update_needed: "{{ (tor_installed_version_raw.content | default('') | b64decode | trim) != tor_latest_version }}"
+
+# - name: Install or update Tor Browser
+#   when: tor_update_needed | bool
+#   block:
+#     - name: Create a temporary directory
+#       ansible.builtin.tempfile:
+#         state: directory
+#         suffix: tor_install
+#       register: tor_tmp_dir
+
+#     - name: Create the temporary GNUPG home directory
+#       ansible.builtin.file:
+#         path: "{{ tor_tmp_dir.path }}/gnupg"
+#         state: directory
+#         mode: "0700"
+
+#     - name: Download Tor archive
+#       ansible.builtin.get_url:
+#         url: "{{ tor_download_url }}"
+#         dest: "{{ tor_tmp_dir.path }}/{{ tor_file_basename }}"
+#         mode: "0644"
+
+#     - name: Download Tor signature file
+#       ansible.builtin.get_url:
+#         url: "{{ tor_download_url }}.asc"
+#         dest: "{{ tor_tmp_dir.path }}/{{ tor_file_basename }}.asc"
+#         mode: "0644"
+
+#     - name: Import Tor signing key -WKD
+#       ansible.builtin.shell: >
+#         curl -fsSL "https://openpgpkey.torproject.org/.well-known/openpgpkey/torproject.org/hu/kounek7zrdx745qydx6p59t9mqjpuhdf"
+#         | gpg --homedir "{{ tor_tmp_dir.path }}/gnupg" --import
+#       environment:
+#         GNUPGHOME: "{{ tor_tmp_dir.path }}/gnupg"
+#       register: tor_wkd_import
+#       failed_when: false
+#       changed_when: false
+#       args:
+#         creates: "{{ tor_tmp_dir.path }}/gnupg"
+
+#     - name: Fallback — import signing key via keyserver
+#       ansible.builtin.command: >
+#         gpg --homedir "{{ tor_tmp_dir.path }}/gnupg"
+#         --keyserver keys.openpgp.org --recv-keys {{ tor_signing_key_fingerprint }}
+#       when: tor_wkd_import.rc != 0
+#       changed_when: true
+
+#     - name: Verify the GPG signature
+#       ansible.builtin.shell: >
+#         gpg --homedir "{{ tor_tmp_dir.path }}/gnupg" --status-fd 1
+#         --verify "{{ tor_tmp_dir.path }}/{{ tor_file_basename }}.asc"
+#         "{{ tor_tmp_dir.path }}/{{ tor_file_basename }}"
+#         | grep -q "^\[GNUPG:\] GOODSIG"
+#       register: tor_signature_check
+#       changed_when: false
+#       failed_when: tor_signature_check.rc != 0
+
+#     - name: Reset the install directory
+#       ansible.builtin.file:
+#         path: "{{ tor_install_dir }}"
+#         state: absent
+
+#     - name: Extract Tor Browser archive
+#       ansible.builtin.unarchive:
+#         src: "{{ tor_tmp_dir.path }}/{{ tor_file_basename }}"
+#         dest: "{{ tor_tmp_dir.path }}"
+#         remote_src: true
+
+#     - name: Move extracted files to the install directory
+#       ansible.builtin.command: >
+#         mv "{{ tor_tmp_dir.path }}/tor-browser" "{{ tor_install_dir }}"
+
+#     - name: Record the installed version
+#       ansible.builtin.copy:
+#         content: "{{ tor_latest_version }}"
+#         dest: "{{ tor_install_dir }}/.installed_version"
+#         mode: "0644"
+
+#     - name: Ensure the start script is executable
+#       ansible.builtin.file:
+#         path: "{{ tor_install_dir }}/Browser/start-tor-browser"
+#         mode: "0755"
+
+#     - name: Create the symlink in ~/.local/bin
+#       ansible.builtin.file:
+#         src: "{{ tor_install_dir }}/Browser/start-tor-browser"
+#         dest: "{{ tor_bin_link }}"
+#         state: link
+#         force: true
+
+#     - name: Deploy desktop entry
+#       ansible.builtin.template:
+#         src: tor-browser.desktop.j2
+#         dest: "{{ tor_desktop_file }}"
+#         mode: "0644"
+
+#     - name: Clean up temporary directory
+#       ansible.builtin.file:
+#         path: "{{ tor_tmp_dir.path }}"
+#         state: absent

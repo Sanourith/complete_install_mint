@@ -1,0 +1,29 @@
+- name: Check if multiverse is already enabled
+  ansible.builtin.command: grep -r "^deb.*multiverse" /etc/apt/sources.list /etc/apt/sources.list.d/
+  register: multiverse_check
+  changed_when: false
+  failed_when: false
+
+- name: Activate multiverse repository (for Steam)
+  ansible.builtin.command: add-apt-repository multiverse -y
+  become: true
+  when: multiverse_check.rc != 0
+  register: multiverse_added
+
+- name: Refresh apt cache if multiverse was just added
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+  when: multiverse_added.changed | default(false)
+
+- name: Install Steam...
+  ansible.builtin.apt:
+    name: "{{ steam_package }}"
+    state: present
+  become: true
+
+- name: Install apt packages...
+  ansible.builtin.apt:
+    name: "{{ simple_packages }}"
+    state: present
+  become: true

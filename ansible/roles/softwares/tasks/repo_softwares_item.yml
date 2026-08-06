@@ -1,0 +1,45 @@
+- name: "{{ item.name }} - Download GPG key"
+  ansible.builtin.get_url:
+    url: "{{ item.key_url }}"
+    dest: "{{ item.key_dest }}"
+    mode: "0644"
+  become: true
+  when: item.key_is_binary
+
+- name: "{{ item.name }} - Download ASCII for GPG key"
+  ansible.builtin.shell: >
+    curl -fsSL {{ item.key_url }} | gpg --dearmor > {{ item.key_dest }}
+  args:
+    creates: "{{ item.key_dest }}"
+  become: true
+  when: not item.key_is_binary
+
+- name: "{{ item.name }} - Declare repository (deb)"
+  ansible.builtin.copy:
+    content: "{{ item.repo_line }}\n"
+    dest: "{{ item.repo_dest }}"
+    mode: "0644"
+  become: true
+  when: item.repo_line is not none
+  register: repo_file_written
+
+- name: "{{ item.name }} - get .sources file"
+  ansible.builtin.get_url:
+    url: "{{ item.repo_source_url }}"
+    dest: "{{ item.repo_dest }}"
+    mode: "0644"
+  become: true
+  when: item.repo_line is none
+  register: repo_file_downloaded
+
+- name: "{{ item.name }} - Update apt cache if repo changed"
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+  when: (repo_file_written.changed | default(false)) or (repo_file_downloaded.changed | default(false))
+
+- name: "{{ item.name }} - Install package..."
+  ansible.builtin.apt:
+    name: "{{ item.package }}"
+    state: present
+  become: true
