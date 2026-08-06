@@ -58,22 +58,6 @@ complete_install_mint/
 
 ---
 
-## 📦 `prerequisites` role
-
-The first finished role. Prepares the system *before* installing any business software.
-
-| Task file | Description |
-|---|---|
-| `system.yml` | System update, DNS configuration, network driver (ethernet speed), blacklisting the Nouveau driver (in favor of the proprietary Nvidia driver) |
-| `shell_env.yml` | Custom `.bashrc` aliases, default terminal resizing |
-| `packages.yml` | Base system packages, Flatpak + Flathub repo, Python environment (`venv`, `pip`) |
-| `desktop.yml` | GTK themes, automatic wallpaper-changer service |
-| `network.yml` | Network speed connection adapter
-
-Every task is idempotent: rerunning the playbook only reapplies what actually changed.
-
----
-
 ## 🔧 Requirements
 
 - Linux Mint (or an apt-compatible Ubuntu/Debian derivative)
@@ -88,7 +72,7 @@ Everything else (Ansible, collections, dependencies) is installed automatically 
 
 - [x] Ansible structure (inventories, playbook, roles)
 - [x] `prerequisites` role
-- [ ] `softwares` role (dev, devops, data eng)
+- [x] `softwares` role
 - [ ] `consols` role
 - [ ] `vscode` role
 - [ ] `webstorm` role
