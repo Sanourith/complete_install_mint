@@ -245,6 +245,12 @@ function _install_signal() {
   rm -rf "$tmp"
 }
 
+function _install_keepass() {
+  sudo add-apt-repository ppa:phoerious/keepassxc
+  sudo apt update
+  sudo apt install keepassxc
+}
+
 function _install_steam() {
   log_info "# Installing STEAM..."
 
@@ -322,6 +328,7 @@ print_separator
 log_info "Starting script: $SCRIPT_NAME"
 print_separator
 
+_install_keepass || log_warning "Keepass installation failed, continuing..."
 _install_vscode || log_warning "VS Code installation failed, continuing..."
 _install_steam || log_warning "Steam installation failed, continuing..."
 _install_brave || log_warning "Brave installation failed, continuing..."
