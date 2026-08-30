@@ -2,19 +2,17 @@
 
 # ==============================================================================
 # Script: 7_consols.sh
-# Description: Installation Kega Fusion (SEGA emulator) via Flatpak
-#              + desktop shortcut
+# Description: Installation des émulateurs de consoles via Flatpak
+#              (Kega Fusion, PokeMMO, melonDS) + raccourci bureau
 # ==============================================================================
 
 set -e
 
-APP_ID="com.carpeludum.KegaFusion"
 APP_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons"
-DESKTOP_FILE="$APP_DIR/kega-fusion.desktop"
 
 # ==============================================================================
-# LOGS  (standalone — also works when launched from main_installer.sh)
+# LOGS  (standalone — fonctionne aussi lancé depuis main_installer.sh)
 # ==============================================================================
 
 RED='\033[0;31m'
@@ -30,125 +28,134 @@ log_error()   { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 print_separator() { echo "============================================================================="; }
 
 # ==============================================================================
-# MAIN
+# PREREQUISITES
 # ==============================================================================
 
-print_separator
-log_info "Installing Kega Fusion (SEGA emulator)"
-print_separator
-echo ""
+# Installe Flatpak lui-même si absent.
+ensure_flatpak() {
+  if ! command -v flatpak &>/dev/null; then
+    log_warning "Flatpak not found — installing..."
+    sudo apt-get update -qq
+    sudo apt-get install -y flatpak
+    log_success "Flatpak installed."
+  else
+    log_info "Flatpak already installed — skipping."
+  fi
+}
 
-# --- Flatpak ---
-if ! command -v flatpak &>/dev/null; then
-  log_warning "Flatpak not found — installing..."
-  sudo apt-get update -qq
-  sudo apt-get install -y flatpak
-  log_success "Flatpak installed."
-else
-  log_info "Flatpak already installed — skipping."
-fi
+# Ajoute le dépôt Flathub si absent.
+ensure_flathub() {
+  if ! flatpak remotes | grep -q "^flathub"; then
+    log_info "Adding Flathub repository..."
+    flatpak remote-add --if-not-exists flathub \
+      https://flathub.org/repo/flathub.flatpakrepo
+    log_success "Flathub added."
+  else
+    log_info "Flathub already configured — skipping."
+  fi
+}
 
-# --- Flathub remote ---
-if ! flatpak remotes | grep -q "^flathub"; then
-  log_info "Adding Flathub repository..."
-  flatpak remote-add --if-not-exists flathub \
-    https://flathub.org/repo/flathub.flatpakrepo
-  log_success "Flathub added."
-else
-  log_info "Flathub already configured — skipping."
-fi
+# ==============================================================================
+# HELPERS
+# ==============================================================================
 
-# --- Kega Fusion ---
-if flatpak list --app | grep -q "$APP_ID"; then
-  log_info "Kega Fusion already installed — skipping."
-else
-  log_info "Installing Kega Fusion via Flatpak..."
-  flatpak install -y flathub "$APP_ID"
-  log_success "Kega Fusion installed."
-fi
+# install_flatpak_app <app_id> <nom lisible>
+# Installe une appli Flatpak uniquement si elle n'est pas déjà présente.
+install_flatpak_app() {
+  local app_id="$1"
+  local friendly_name="$2"
 
-# --- Desktop shortcut ---
-log_info "Creating desktop shortcut..."
-mkdir -p "$APP_DIR" "$ICON_DIR"
+  if flatpak list --app | grep -q "$app_id"; then
+    log_info "${friendly_name} already installed — skipping."
+  else
+    log_info "Installing ${friendly_name} via Flatpak..."
+    flatpak install -y flathub "$app_id"
+    log_success "${friendly_name} installed."
+  fi
+}
 
-cat > "$DESKTOP_FILE" <<EOF
+# create_desktop_shortcut <app_id> <nom> <commentaire>
+# Certaines apps Flatpak n'exposent pas correctement leur .desktop/icône
+# dans le menu — on force un raccourci propre dans ce cas.
+create_desktop_shortcut() {
+  local app_id="$1"
+  local name="$2"
+  local comment="$3"
+  local desktop_file="$APP_DIR/${app_id}.desktop"
+
+  mkdir -p "$APP_DIR" "$ICON_DIR"
+
+  cat > "$desktop_file" <<EOF
 [Desktop Entry]
-Name=Kega Fusion
-Comment=SEGA Emulator
-Exec=flatpak run $APP_ID
-Icon=$APP_ID
+Name=${name}
+Comment=${comment}
+Exec=flatpak run ${app_id}
+Icon=${app_id}
 Terminal=false
 Type=Application
 Categories=Game;Emulator;
 StartupNotify=true
 EOF
 
-# Note: .desktop files should NOT be +x on modern GNOME/KDE
-if command -v update-desktop-database &>/dev/null; then
-  update-desktop-database "$APP_DIR" 2>/dev/null || true
-fi
+  # Note: les .desktop ne doivent PAS être +x sur GNOME/KDE modernes
+  if command -v update-desktop-database &>/dev/null; then
+    update-desktop-database "$APP_DIR" 2>/dev/null || true
+  fi
 
-log_success "Desktop shortcut created: $DESKTOP_FILE"
+  log_success "Desktop shortcut created: $desktop_file"
+}
 
-# --- Done ---
-echo ""
+# ==============================================================================
+# APPS
+# ==============================================================================
 
-echo "Installing PokéMMO with flatpak..."
-flatpak install com.pokemmo.PokeMMO
-echo "Done..."
+install_kega_fusion() {
+  local app_id="com.carpeludum.KegaFusion"
 
-print_separator
-log_success "Kega Fusion ready!"
-log_info  "  >> Find it in your app menu under 'Kega Fusion'"
-log_info  "  >> Or launch manually: flatpak run $APP_ID"
-print_separator
+  print_separator
+  log_info "Kega Fusion (SEGA emulator)"
+  print_separator
 
-# echo "Verifying YGO-Omega shortcut..."
-# SOURCE_DIR="/media/psowl/SSD4OWL/8_Games/YGO-Omega"
-# GAME_DIR="$HOME/Documents/games/YGO-Omega"
+  install_flatpak_app "$app_id" "Kega Fusion"
+  create_desktop_shortcut "$app_id" "Kega Fusion" "SEGA Emulator"
+}
 
-# EXECUTABLE="$GAME_DIR/YGO Omega.x86_64"
-# DESKTOP_FILE="$HOME/.local/share/applications/ygo-omega.desktop"
+install_pokemmo() {
+  local app_id="com.pokemmo.PokeMMO"
 
-# # Copie du jeu si absent
-# if [ ! -f "$EXECUTABLE" ]; then
-#     echo "📦 Copying YGO Omega..."
+  print_separator
+  log_info "PokeMMO"
+  print_separator
 
-#     mkdir -p "$GAME_DIR"
+  install_flatpak_app "$app_id" "PokeMMO"
+}
 
-#     cp -r "$SOURCE_DIR"/* "$GAME_DIR"/
+install_melonds() {
+  local app_id="net.kuribo64.melonDS"
 
-#     echo "✅ Copied."
-# fi
+  print_separator
+  log_info "melonDS (Nintendo DS emulator)"
+  print_separator
 
-# # Vérification finale
-# if [ ! -f "$EXECUTABLE" ]; then
-#     echo "❌ Exécutable introuvable :"
-#     echo "   $EXECUTABLE"
-#     exit 1
-# fi
+  install_flatpak_app "$app_id" "melonDS"
+}
 
-# # Création du dossier applications
-# mkdir -p "$HOME/.local/share/applications"
+# ==============================================================================
+# MAIN
+# ==============================================================================
 
-# # Création du raccourci
-# cat > "$DESKTOP_FILE" <<EOF
-# [Desktop Entry]
-# Version=1.0
-# Type=Application
-# Name=YGO Omega
-# Comment=Yu-Gi-Oh Omega
-# Path=$GAME_DIR
-# Exec=$GAME_DIR/YGO\ Omega.x86_64
-# Terminal=false
-# Categories=Game;
-# StartupNotify=true
-# EOF
+main() {
+  ensure_flatpak
+  ensure_flathub
 
-# chmod +x "$DESKTOP_FILE"
+  install_kega_fusion
+  install_pokemmo
+  install_melonds
 
-# # Force le refresh du menu Mint/Cinnamon
-# update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+  print_separator
+  log_success "All consoles ready!"
+  log_info  "  >> Find them in your app menu, or launch via 'flatpak run <app_id>'"
+  print_separator
+}
 
-# echo
-# echo "🎮 YGO Omega is ready."
+main "$@"

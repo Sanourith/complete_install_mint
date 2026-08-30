@@ -53,3 +53,5 @@ venv/
 /data/processed/
 *.dump
 *.bak.tar.gz
+
+megasync*
