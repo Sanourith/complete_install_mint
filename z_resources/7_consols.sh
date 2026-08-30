@@ -140,6 +140,16 @@ install_melonds() {
   install_flatpak_app "$app_id" "melonDS"
 }
 
+install_mgba() {
+  local app_id="io.mgba.mGBA"
+
+  print_separator
+  log_info "mGBA (Game Boy Advance emulator)"
+  print_separator
+
+  install_flatpak_app "$app_id" "mGBA"
+}
+
 # ==============================================================================
 # MAIN
 # ==============================================================================
@@ -151,6 +161,7 @@ main() {
   install_kega_fusion
   install_pokemmo
   install_melonds
+  install_mgba
 
   print_separator
   log_success "All consoles ready!"
