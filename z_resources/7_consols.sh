@@ -150,6 +150,56 @@ install_mgba() {
   install_flatpak_app "$app_id" "mGBA"
 }
 
+install_duckstation() {
+  local app_id="org.duckstation.DuckStation"
+
+  print_separator
+  log_info "DuckStation (PlayStation 1 emulator)"
+  print_separator
+
+  install_flatpak_app "$app_id" "DuckStation"
+}
+
+install_pcsx2() {
+  local app_id="net.pcsx2.PCSX2"
+
+  print_separator
+  log_info "PCSX2 (PlayStation 2 emulator)"
+  print_separator
+
+  install_flatpak_app "$app_id" "PCSX2"
+}
+
+install_dolphin() {
+  local app_id="org.DolphinEmu.dolphin-emu"
+
+  print_separator
+  log_info "Dolphin (GameCube / Wii emulator)"
+  print_separator
+
+  install_flatpak_app "$app_id" "Dolphin"
+}
+
+install_snes9x() {
+  local app_id="com.snes9x.Snes9x"
+
+  print_separator
+  log_info "Snes9x (SNES emulator)"
+  print_separator
+
+  install_flatpak_app "$app_id" "Snes9x"
+}
+
+install_rmg() {
+  local app_id="com.github.Rosalie241.RMG"
+
+  print_separator
+  log_info "RMG (Nintendo 64 emulator)"
+  print_separator
+
+  install_flatpak_app "$app_id" "RMG"
+}
+
 # ==============================================================================
 # MAIN
 # ==============================================================================
@@ -162,6 +212,11 @@ main() {
   install_pokemmo
   install_melonds
   install_mgba
+  install_duckstation
+  install_pcsx2
+  install_dolphin
+  install_snes9x
+  install_rmg
 
   print_separator
   log_success "All consoles ready!"
