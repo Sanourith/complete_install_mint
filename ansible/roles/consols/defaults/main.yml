@@ -1,0 +1,43 @@
+---
+consols_flathub_repo: "https://flathub.org/repo/flathub.flatpakrepo"
+
+consols_apps:
+  - app_id: com.carpeludum.KegaFusion
+    name: Kega Fusion
+    comment: SEGA Emulator
+    create_shortcut: true
+  - app_id: com.pokemmo.PokeMMO
+    name: PokeMMO
+    comment: PokeMMO
+    create_shortcut: false
+  - app_id: net.kuribo64.melonDS
+    name: melonDS
+    comment: Nintendo DS Emulator
+    create_shortcut: false
+  - app_id: io.mgba.mGBA
+    name: mGBA
+    comment: Game Boy Advance Emulator
+    create_shortcut: false
+  - app_id: org.duckstation.DuckStation
+    name: DuckStation
+    comment: PlayStation 1 Emulator
+    create_shortcut: false
+  - app_id: net.pcsx2.PCSX2
+    name: PCSX2
+    comment: PlayStation 2 Emulator
+    create_shortcut: false
+  - app_id: org.DolphinEmu.dolphin-emu
+    name: Dolphin
+    comment: GameCube / Wii Emulator
+    create_shortcut: false
+  - app_id: com.snes9x.Snes9x
+    name: Snes9x
+    comment: SNES Emulator
+    create_shortcut: false
+  - app_id: com.github.Rosalie241.RMG
+    name: RMG
+    comment: Nintendo 64 Emulator
+    create_shortcut: false
+
+consols_app_dir: "{{ ansible_env.HOME }}/.local/share/applications"
+consols_icon_dir: "{{ ansible_env.HOME }}/local/share/icons"

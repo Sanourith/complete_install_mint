@@ -1,0 +1,3 @@
+- name: Update desktop database
+  ansible.builtin.command: update-desktop-database "{{ consols_app_dir }}"
+  changed_when: false

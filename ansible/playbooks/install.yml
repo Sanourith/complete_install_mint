@@ -3,7 +3,7 @@
   roles:
     - prerequisites
     - softwares
-    # - consols
+    - consols
     # - vscode
     # - webstorm
 

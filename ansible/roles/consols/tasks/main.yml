@@ -1,0 +1,42 @@
+- name: Ensure Flatpak is installed
+  become: true
+  ansible.builtin.apt:
+    name: flatpak
+    state: present
+    update_cache: true
+
+- name: Ensure Flathub remote is configured
+  become: true
+  community.general.flatpak_remote:
+    name: flathub
+    state: present
+    flatpakrepo_url: "{{ consols_flathub_repo }}"
+
+- name: Install emulators via Flatpak
+  community.general.flatpak:
+    name: "{{ item.app_id }}"
+    state: present
+    remote: flathub
+  loop: "{{ consols_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Ensure app/icon directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ consols_app_dir }}"
+    - "{{ consols_icon_dir }}"
+
+- name: Create desktop shortcuts for apps that need one
+  ansible.builtin.template:
+    src: flatpak-app.desktop.j2
+    dest: "{{ consols_app_dir }}/{{ item.app_id }}.desktop"
+    mode: "0644"
+  loop: "{{ consols_apps }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.create_shortcut | default(false)
+  notify: Update desktop database
