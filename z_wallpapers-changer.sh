@@ -5,10 +5,10 @@ set -e
 HORIZONTAL_DIR="$HOME/Pictures/AIwall"
 [[ -d "$HORIZONTAL_DIR" ]] || HORIZONTAL_DIR="$HOME/Images/AIwall"
 
-VERTICAL_DIR="$HOME/Pictures/hnta"
-[[ -d "$VERTICAL_DIR" ]] || VERTICAL_DIR="$HOME/Images/hnta"
+# VERTICAL_DIR="$HOME/Pictures/hnta"
+# [[ -d "$VERTICAL_DIR" ]] || VERTICAL_DIR="$HOME/Images/hnta"
 
-TOTAL_SCREENS="1"
+TOTAL_SCREENS="3"
 
 while true; do
   for ((i=0; i<TOTAL_SCREENS; i++)); do
