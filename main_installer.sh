@@ -460,7 +460,7 @@ _check_dns
 _update_network_driver
 _size_terminal
 # _install_themes
-_setup_wallpapers
+# _setup_wallpapers
 
 # --- Sub-scripts installation ---
 log_warning "Preparing resource scripts..."
